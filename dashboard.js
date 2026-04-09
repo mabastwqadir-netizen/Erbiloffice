@@ -12,6 +12,15 @@ let currentUser = null;
 let userProfile = null; // پاشەکەوتکردنی زانیاری پڕۆفایل و بنکە
 let isDeviceVerified = false; // بۆ پشکنینی دۆخی ئامێرەکە بە گشتی
 
+// فەنکشن بۆ دیاریکردنی سەرەتا و کۆتایی ڕۆژی ئێستا
+function getTodayBounds() {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    return { start: start.toISOString(), end: end.toISOString() };
+}
+
 // --- ئامادەکردنی ئایدی ئامێر (Device Fingerprint) ---
 function getDeviceID() {
     let id = localStorage.getItem('device_id');
@@ -109,17 +118,27 @@ function startLiveClock() {
 
 // --- ٢. پشکنینی دۆخی ئێستای فەرمانبەر (ئایا پێشتر هاتنی کردووە؟) ---
 async function checkAttendanceStatus() {
+    const { start, end } = getTodayBounds();
     const { data, error } = await client
         .from('attendance')
         .select('*')
         .eq('user_id', currentUser.id)
-        .is('check_out_time', null)
+        .gte('check_in_time', start)
+        .lte('check_in_time', end)
         .order('check_in_time', { ascending: false })
         .limit(1);
 
     if (data && data.length > 0) {
-        // ئەگەر هاتنی کردبوو، ڕاستەوخۆ دوگمەی دەرچوون نیشان بدە
-        toggleToCheckoutUI(data[0].check_in_time);
+        const record = data[0];
+        if (!record.check_out_time) {
+            // هاتنی کردووە بەڵام دەرنەچووە
+            toggleToCheckoutUI(record.check_in_time);
+        } else {
+            // هەردووکی کردووە - هەردوو دوگمەکە دەشارینەوە
+            document.getElementById('checkinBtn').style.display = 'none';
+            document.getElementById('checkoutBtn').style.display = 'none';
+            updateStatus(translations[currentLang].dailyLimitReached, "success");
+        }
     }
 }
 
@@ -334,12 +353,14 @@ async function processCheckIn() {
     const btn = document.getElementById('checkinBtn');
     const txt = document.getElementById('checkinText');
 
-    // پشکنین بۆ ئەوەی دڵنیابین کە بەکارهێنەر پێشتر هاتنی تۆمار نەکردووە و دەرنەچووە
+    // پشکنین بۆ ئەوەی بزانین ئایا لەم ڕۆژەدا هیچ تۆمارێکی هەیە (هاتن یان دەرچوون)
+    const { start, end } = getTodayBounds();
     const { data: activeCheckIn, error: activeCheckInError } = await client
         .from('attendance')
         .select('*')
         .eq('user_id', currentUser.id)
-        .is('check_out_time', null)
+        .gte('check_in_time', start)
+        .lte('check_in_time', end)
         .limit(1);
 
     if (activeCheckInError) {
@@ -630,10 +651,13 @@ function renderCalendar() {
     for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const record = attendanceData.find(r => r.check_in_time.startsWith(dateStr));
+        const dayDate = new Date(year, month, day);
+        const dayOfWeek = dayDate.getDay(); // 0=Sun, 5=Fri, 6=Sat
         
         let className = "calendar-day";
         if (record) className += " has-record";
-        if (new Date().toDateString() === new Date(year, month, day).toDateString()) className += " today";
+        if (dayOfWeek === 5 || dayOfWeek === 6) className += " weekend-day";
+        if (new Date().toDateString() === dayDate.toDateString()) className += " today";
 
         const dayEl = document.createElement('div');
         dayEl.className = className;

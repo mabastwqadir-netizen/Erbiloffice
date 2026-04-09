@@ -60,7 +60,15 @@ const translations = {
         noBranch: "زانیاری بنکە نییە",
         waitRecord: "تۆمارکردن...",
         deviceTaken: "ئەم ئامێرە بۆ هەژمارێکی تر بەکارهاتووە",
-        alreadyCheckedIn: "تۆ پێشتر هاتنت تۆمار کردووە و دەرنەچوویت."
+        alreadyCheckedIn: "تۆ پێشتر هاتنت تۆمار کردووە.",
+        dailyLimitReached: "تۆ ئەمڕۆ (هاتن و دەرچوون)ی خۆتت تۆمارکردووە و گەیشتووی بە سنووری ڕۆژانە ",
+        updateTitle: "وەشانی نوێ بەردەستە",
+        updateMsg: "چەندین گۆڕانکاری و چاکسازی نوێ ئەنجامدراوە بۆ باشترکردنی ئەزموونی بەکارهێنانت.",
+        updateBtn: "ئێستا نوێی بکەرەوە",
+        pwaTitle: "دابەزاندنی ئەپ",
+        pwaDesc: "بۆ ئەزموونێکی باشتر و خێراتر، ئەپەکە بخەرە سەر شاشەی سەرەکی.",
+        pwaInstall: "دابەزاندن",
+        pwaIOSMsg: "کلیک لە 'Share' بکە و پاشان 'Add to Home Screen' هەڵبژێرە."
     },
     ar: {
         title: "IHEC Erbil Office",
@@ -80,7 +88,7 @@ const translations = {
         location: "الموقع",
         verifying: "جاري التحقق...",
         checkin: "تسجيل حضور",
-        checkout: "تسجيل انصراف",
+        checkout: "انصراف",
         history: "سجل الحضور والانصراف",
         month: "الشهر",
         confirmTitle: "هل أنت متأكد؟",
@@ -121,7 +129,15 @@ const translations = {
         noBranch: "لا توجد معلومات عن الفرع",
         waitRecord: "جاري التسجيل...",
         deviceTaken: "هذا الجهاز مسجل لحساب آخر",
-        alreadyCheckedIn: "لقد سجلت حضورك بالفعل ولم تسجل انصرافك بعد."
+        alreadyCheckedIn: "لقد سجلت حضورك بالفعل لهذا اليوم.",
+        dailyLimitReached: "لقد أكملت تسجيل الحضور والانصراف لهذا اليوم وبلغت الحد الأقصى اليومي.",
+        updateTitle: "تحديث جديد متاح",
+        updateMsg: "تم إجراء العديد من التغييرات والتحسينات الجديدة لتحسين تجربتك.",
+        updateBtn: "تحديث الآن",
+        pwaTitle: "تثبيت التطبيق",
+        pwaDesc: "للحصول على تجربة أفضل وأسرع، قم بتثبيت التطبيق على شاشتك الرئيسية.",
+        pwaInstall: "تثبيت",
+        pwaIOSMsg: "اضغط على 'Share' ثم اختر 'Add to Home Screen'."
     }
 };
 

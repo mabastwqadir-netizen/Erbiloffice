@@ -285,6 +285,56 @@ input:focus + .input-icon { color: var(--accent-pink); }
     animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+/* Modern Update Modal Specific Styling */
+.update-card {
+    padding: 0 !important;
+    overflow: hidden;
+    border: none !important;
+    max-width: 400px !important;
+}
+
+.update-header {
+    background: linear-gradient(135deg, var(--primary), #6366f1);
+    padding: 40px 20px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.update-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.update-icon-wrapper i {
+    color: white;
+    font-size: 2.5rem;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.update-body {
+    padding: 30px;
+}
+
+.update-btn {
+    background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+    border: none;
+    margin-top: 10px;
+}
+
+.update-btn:hover {
+    box-shadow: 0 10px 20px rgba(0, 98, 255, 0.2) !important;
+}
+
 @keyframes modalPop {
     from { opacity: 0; transform: scale(0.9) translateY(20px); }
     to { opacity: 1; transform: scale(1) translateY(0); }
@@ -327,6 +377,11 @@ input:focus + .input-icon { color: var(--accent-pink); }
 .calendar-day:hover { background: var(--primary); color: white; }
 .has-record { border: 2px solid var(--primary); color: var(--primary); font-weight: 700; }
 .today { background: var(--accent-pink) !important; color: white !important; }
+
+.weekend-day {
+    color: #ef4444; /* ڕەنگی سور بۆ دەقی ڕۆژەکە */
+    background: rgba(239, 68, 68, 0.08); /* پاشبنەمایەکی زۆر کاڵ بۆ ناسینەوەی پشوو */
+}
 
 .accuracy-badge {
     padding: 4px 12px;
@@ -726,3 +781,80 @@ min-height: 80px; /* Ensure consistent height for both items */
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 98, 255, 0.3);
 }
+
+/* --- PWA Install Banner (Modern Bottom Sheet) --- */
+.pwa-banner {
+    position: fixed;
+    bottom: -100%;
+    left: 0;
+    right: 0;
+    background: var(--card-bg);
+    padding: 25px;
+    border-radius: 30px 30px 0 0;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+    z-index: 99999;
+    transition: bottom 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.pwa-banner.show { bottom: 0; }
+
+.pwa-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 2px;
+    margin-bottom: 20px;
+}
+
+.pwa-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 400px;
+    text-align: right;
+}
+
+.pwa-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.pwa-ios-hint {
+    font-size: 0.85rem;
+    color: var(--primary);
+    font-weight: 600;
+    background: rgba(0, 98, 255, 0.05);
+    padding: 10px;
+    border-radius: 12px;
+    margin-top: 10px;
+}
+
+/* PWA Close Button */
+.pwa-close-btn {
+    position: absolute;
+    top: 15px;
+    left: 15px; /* Positioned to the left for RTL layout */
+    background: none;
+    border: none;
+    color: var(--text-sub);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background 0.3s ease;
+}
+.pwa-close-btn:hover {
+    background: var(--input-bg);
+}
+
+@keyframes modalPop {
+    from { opacity: 0; transform: scale(0.9) translateY(20px); }

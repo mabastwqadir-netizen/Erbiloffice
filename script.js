@@ -4,6 +4,104 @@
 const SUPABASE_URL = 'https://mygqlubvxdbbsygitjuj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15Z3FsdWJ2eGRiYnN5Z2l0anVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjA3NzIsImV4cCI6MjA5MTI5Njc3Mn0.bAecJcTMfZEiT1doet_PgH3EEjjAB6juNRoCJlK9qeA';
 
+// --- PWA Logic & Service Worker Registration ---
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(err => console.error("SW failed", err));
+}
+
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // نیشاندانی بانەری پێشنیار دوای ٣ چرکە
+    setTimeout(showPwaPrompt, 3000);
+});
+
+function showPwaPrompt() {
+    const banner = document.getElementById('pwaBanner');
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+
+    if (isStandalone) return; // ئەگەر ئەپەکە پێشتر دابەزێنرابوو
+
+    if (banner) {
+        banner.classList.add('show');
+        if (isIOS) {
+            document.getElementById('pwaInstallBtn').style.display = 'none';
+            document.getElementById('pwaIosHint').style.display = 'block';
+        }
+    }
+}
+
+document.getElementById('pwaInstallBtn')?.addEventListener('click', async () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') hidePwaPrompt();
+        deferredPrompt = null;
+    }
+});
+
+function hidePwaPrompt() {
+    document.getElementById('pwaBanner')?.classList.remove('show');
+}
+
+// داخستنی بانەرەکە ئەگەر بەکارهێنەر دەستی بە "Handle"ەکەدا هێنا بۆ خوارەوە
+document.getElementById('pwaBanner')?.addEventListener('click', (e) => {
+    if (e.target.className === 'pwa-handle') hidePwaPrompt();
+    // Also hide if the close button is clicked
+    if (e.target.closest('.pwa-close-btn')) hidePwaPrompt();
+});
+
+// --- Version Check for Forced Refresh ---
+async function checkAppVersion() {
+    try {
+        // Add a cache-buster to ensure we always fetch the latest version.json
+        const response = await fetch('version.json?t=' + new Date().getTime());
+        const data = await response.json();
+        const serverVersion = data.version;
+        const clientVersion = localStorage.getItem('app_version');
+
+        if (clientVersion && clientVersion !== serverVersion) {
+            showUpdateModal(serverVersion);
+            return true; // Indicate that a reload was triggered
+        } else if (!clientVersion) {
+            // First time load or version not set, store it
+            localStorage.setItem('app_version', serverVersion);
+        }
+    } catch (error) {
+        console.error('Failed to check app version:', error);
+    }
+    return false; // Indicate no reload was triggered
+}
+
+function showUpdateModal(newVersion) {
+    const modal = document.getElementById('updateModal');
+    if (modal) {
+        modal.setAttribute('data-new-version', newVersion);
+        modal.style.display = 'flex';
+    }
+}
+
+function forceUpdateApp() {
+    const modal = document.getElementById('updateModal');
+    const newVersion = modal.getAttribute('data-new-version');
+    
+    // پارێزگاری لە ڕێکخستنە سەرەکییەکان
+    const lang = localStorage.getItem('lang');
+    const theme = localStorage.getItem('theme');
+    const deviceID = localStorage.getItem('device_id');
+
+    localStorage.clear();
+
+    if (lang) localStorage.setItem('lang', lang);
+    if (theme) localStorage.setItem('theme', theme);
+    if (deviceID) localStorage.setItem('device_id', deviceID);
+    localStorage.setItem('app_version', newVersion);
+
+    window.location.reload(true);
+}
+
 // لێرە ناوی گۆڕاوەکەمان گۆڕی بۆ supabaseClient بۆ ئەوەی چیتر تووشی هەڵەی (already declared) نەبیت
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -35,7 +133,10 @@ function toggleTheme() {
 }
 
 // دڵنیابوونەوە لەوەی کاتێک لاپەڕەکە کرایەوە Theme جێبەجێ دەبێت
-document.addEventListener('DOMContentLoaded', applyTheme);
+document.addEventListener('DOMContentLoaded', async () => {
+    const reloadTriggered = await checkAppVersion();
+    if (!reloadTriggered) applyTheme(); // Apply theme only if no reload was triggered
+});
 
 // --- ٣. فانکشنەکانی لاپەڕەی چوونەژوورەوە ---
 
