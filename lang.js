@@ -2,8 +2,8 @@
 
 const translations = {
     ku: {
-        title: "IHEC",
-        subtitle: "ئۆفیسی هەولێر",
+        title: "IHEC Erbil Office",
+        subtitle: "سیستەمی هاتن و دەچوونی فەرمانبەران",
         emailLabel: "ئیمەیڵی فەرمی",
         passLabel: "تێپەڕەوشە (پاسوۆرد)",
         loginBtnText: "چوونە ژوورەوە",
@@ -14,11 +14,11 @@ const translations = {
         employee: "فەرمانبەر",
         admin: "بەڕێوەبەر",
         clockLoading: "باردەکرێت...",
-        arrival: "هاتن",
+        arrival: "ئامادەبوون",
         device: "ئامێر",
         location: "لۆکەیشن",
         verifying: "پشکنین...",
-        checkin: "ئامادەبووم",
+        checkin: "ئامادە بوون",
         checkout: "تۆمارکردنی دەرچوون",
         history: "مێژووی هاتن و دەرچوونەکانت",
         month: "مانگ",
@@ -59,11 +59,12 @@ const translations = {
         invalidDevice: "ئامێر نەناسراوە",
         noBranch: "زانیاری بنکە نییە",
         waitRecord: "تۆمارکردن...",
-        deviceTaken: "ئەم ئامێرە بۆ هەژمارێکی تر بەکارهاتووە"
+        deviceTaken: "ئەم ئامێرە بۆ هەژمارێکی تر بەکارهاتووە",
+        alreadyCheckedIn: "تۆ پێشتر هاتنت تۆمار کردووە و دەرنەچوویت."
     },
     ar: {
-        title: "IHEC",
-        subtitle: "مكتب أربيل",
+        title: "IHEC Erbil Office",
+        subtitle: " نظام الحضور والانصراف للموظفين",
         emailLabel: "البريد الإلكتروني الرسمي",
         passLabel: "كلمة المرور",
         loginBtnText: "تسجيل الدخول",
@@ -74,7 +75,7 @@ const translations = {
         employee: "موظف",
         admin: "مدير",
         clockLoading: "جاري التحميل...",
-        arrival: "الوصول",
+        arrival: "الحضور",
         device: "الجهاز",
         location: "الموقع",
         verifying: "جاري التحقق...",
@@ -119,7 +120,8 @@ const translations = {
         invalidDevice: "جهاز غير معروف",
         noBranch: "لا توجد معلومات عن الفرع",
         waitRecord: "جاري التسجيل...",
-        deviceTaken: "هذا الجهاز مسجل لحساب آخر"
+        deviceTaken: "هذا الجهاز مسجل لحساب آخر",
+        alreadyCheckedIn: "لقد سجلت حضورك بالفعل ولم تسجل انصرافك بعد."
     }
 };
 

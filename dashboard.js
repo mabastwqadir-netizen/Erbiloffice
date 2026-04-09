@@ -334,6 +334,24 @@ async function processCheckIn() {
     const btn = document.getElementById('checkinBtn');
     const txt = document.getElementById('checkinText');
 
+    // پشکنین بۆ ئەوەی دڵنیابین کە بەکارهێنەر پێشتر هاتنی تۆمار نەکردووە و دەرنەچووە
+    const { data: activeCheckIn, error: activeCheckInError } = await client
+        .from('attendance')
+        .select('id')
+        .eq('user_id', currentUser.id)
+        .is('check_out_time', null)
+        .limit(1);
+
+    if (activeCheckInError) {
+        updateStatus(activeCheckInError.message, "error");
+        return;
+    }
+
+    if (activeCheckIn && activeCheckIn.length > 0) {
+        updateStatus(translations[currentLang].alreadyCheckedIn, "error");
+        return;
+    }
+
     if (!userPos || !currentUser) {
         updateStatus(translations[currentLang].msgLocErr, "error");
         return;
