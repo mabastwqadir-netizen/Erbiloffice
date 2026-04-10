@@ -2,6 +2,7 @@
 
 :root {
    --primary: #0062ff;
+    --primary-rgb: 0, 98, 255; /* زیادکرا بۆ بەکارهێنان لە rgba */
     --primary-hover: #004dc2;
     --accent-pink: #ff69b4;
     --bg-color: #f8fafc;
@@ -15,6 +16,9 @@
 }
 
 [data-theme="dark"] {
+    --primary: #60a5fa; /* شینێکی نەرمتر و گەشتر بۆ دۆخی تاریک */
+    --primary-rgb: 96, 165, 250; /* زیادکرا بۆ بەکارهێنان لە rgba */
+    --primary-hover: #93c5fd;
     --bg-color: #020617;
     --card-bg: #0f172a;
     --text-main: #f1f5f9;

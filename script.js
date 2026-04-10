@@ -225,9 +225,18 @@ async function handleLogin() {
             loader.style.display = 'none';
             btnText.innerText = translations[currentLang].loginBtnText;
         } else {
-            // ئەگەر سەرکەوتوو بوو
-            console.log("Login successful:", data);
-            window.location.href = "dashboard.html"; 
+            // پشکنینی ڕۆڵی بەکارهێنەر لە خشتەی profiles
+            const { data: profile, error: profileError } = await supabaseClient
+                .from('profiles')
+                .select('role')
+                .eq('id', data.user.id)
+                .single();
+
+            if (!profileError && profile && profile.role === 'admin') {
+                window.location.href = "admin_dashboard.html";
+            } else {
+                window.location.href = "dashboard.html";
+            }
         }
     } catch (err) {
         console.error("Unexpected error:", err);

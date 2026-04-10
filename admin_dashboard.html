@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | IHEC</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin_dashboard.css">
+    <link rel="icon" href="assets/icon.png">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Header Section -->
+        <header class="admin-header">
+            <div class="header-titles">
+                <div class="admin-badge">Management System</div>
+                <h1>پانێڵی بەڕێوەبەر</h1>
+                <p id="adminStatus">چاودێری گشتی ئۆفیسی هەولێر</p>
+            </div>
+            <div class="header-side-content">
+                <div class="admin-logo-wrapper">
+                    <img src="assets/icon.png" alt="Logo" class="admin-header-logo">
+                </div>
+                <div class="header-actions">
+                    <button class="admin-icon-btn theme-toggle-btn" onclick="toggleTheme()" id="themeBtn" title="گۆڕینی ڕەنگ"><i class="fas fa-sun"></i></button>
+                    <button class="admin-icon-btn logout-danger" onclick="handleLogout()" title="چوونە دەرەوە"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Admins Section -->
+        <div id="adminsSection" class="admins-display-area" style="display: none;">
+            <span class="admins-label"><i class="fas fa-user-shield"></i> بەڕێوەبەرانی سیستم:</span>
+            <div id="adminsList" class="admins-chips-container">
+                <!-- Admin names will be injected here -->
+            </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <i class="fas fa-users-check"></i>
+                <div class="stat-info">
+                    <span class="stat-label">ئامادەبووان</span>
+                    <span class="stat-value" id="presentCount">0</span>
+                </div>
+            </div>
+            <div class="stat-card absent">
+                <i class="fas fa-user-clock"></i>
+                <div class="stat-info">
+                    <span class="stat-label">نەهاتوو/درەنگ</span>
+                    <span class="stat-value" id="absentCount">0</span>
+                </div>
+            </div>
+            <div class="stat-card pending">
+                <i class="fas fa-file-invoice"></i>
+                <div class="stat-info">
+                    <span class="stat-label">ڕوونکردنەوەکان</span>
+                    <span class="stat-value" id="justificationCount">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="filter-section card">
+            <h3 class="section-title"><i class="fas fa-filter"></i> فلتەرکردنی داتا</h3>
+            <div class="input-group">
+                <label><i class="fas fa-building"></i> فلتەرکردن بەپێی بنکە</label>
+                <select id="branchFilter" onchange="loadAttendanceData()">
+                    <option value="all">هەموو بنکەکان</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label><i class="fas fa-calendar-day"></i> هەڵبژاردنی ڕێکەوت</label>
+                <input type="date" id="datePicker" onchange="loadAttendanceData()">
+            </div>
+        </div>
+
+        <!-- Attendance List -->
+        <div class="attendance-container">
+            <h3 class="section-title"><i class="fas fa-list-ul"></i> لیستی ئامادەبووان</h3>
+            <div id="attendanceList">
+                <!-- Groups of branches will be injected here -->
+                <div class="loading-state">
+                    <div class="loader-ring"></div>
+                    <p>خەریکە داتاکان دەهێنم...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="lang.js"></script>
+    <script src="script.js"></script>
+    <script src="admin_dashboard.js"></script>
+</body>
+</html>
