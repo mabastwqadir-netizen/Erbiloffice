@@ -1078,4 +1078,5 @@ min-height: 80px; /* Ensure consistent height for both items */
 }
 
 @keyframes modalPop {
-    from { opacity: 0; transform: scale(0.9) translateY(20px); } }
+    from { opacity: 0; transform: scale(0.9) translateY(20px); }
+}

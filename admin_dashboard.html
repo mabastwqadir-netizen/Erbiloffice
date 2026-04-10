@@ -164,6 +164,24 @@
         </div>
     </div>
 
+    <!-- Justification View Modal -->
+    <div id="justModal" class="modal-overlay" onclick="closeJustModal(event)">
+        <div class="modal-window update-card">
+            <div class="update-header">
+                <div class="update-icon-wrapper">
+                    <i class="fas fa-file-signature"></i>
+                </div>
+            </div>
+            <div class="update-body">
+                <h3 id="justUserTitle">ڕوونکردنەوە</h3>
+                <div id="justTextContent" class="justification-view-box"></div>
+                <button class="login-btn" onclick="document.getElementById('justModal').style.display='none'">
+                    <span data-i18n="close">داخستن</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="lang.js"></script>
     <script src="script.js"></script>
     <script src="admin_dashboard.js"></script>

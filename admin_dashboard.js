@@ -86,14 +86,18 @@ async function loadAttendanceData() {
             return;
         }
 
-    // هێنانی ڕوونکردنەوەکان بە لیست بۆ فلتەرکردن
-    const { data: justs } = await adminClient
+    // هێنانی ڕوونکردنەوەکان بە لیست و پشکنینی هەڵە
+    const { data: justs, error: justError } = await adminClient
         .from('justifications')
         .select('user_id, reason')
         .eq('date', date);
 
+    if (justError) {
+        console.error("Justification Fetch Error:", justError.message);
+    }
+
     // هێنانی هەموو فەرمانبەران بۆ ئەوەی بزانین کێ غائیبە
-    let profQuery = adminClient.from('profiles').select('*, branches(branch_name)');
+    let profQuery = adminClient.from('profiles').select('*, branches(branch_id, branch_name)');
     if (branchFilter !== 'all') profQuery = profQuery.eq('branch_id', branchFilter);
     const { data: allEmployees } = await profQuery.order('full_name');
 
@@ -212,7 +216,22 @@ function renderAdmins(admins) {
 
 function renderAttendance(attendance, employees) {
     const listDiv = document.getElementById('attendanceList');
-    listDiv.innerHTML = "";
+    const sectionTitle = document.querySelector('.attendance-container .section-title');
+    
+    // نوێکردنەوەی تایتڵ و زیادکردنی باجی ژمارە
+    sectionTitle.innerHTML = `<div class="title-icon-box"><i class="fas fa-list-ul"></i></div> <span>لیستی ئامادەبووان</span> <span class="count-badge">${employees.length} کەس</span>`;
+
+    // دروستکردنی سەردێڕی خشتەکە بۆ لاپتۆپ
+    listDiv.innerHTML = `
+        <div class="attendance-header-row">
+            <div><i class="fas fa-user-circle header-icon"></i> ناوی فەرمانبەر</div>
+            <div><i class="fas fa-map-marked-alt header-icon"></i> ژمارە | بنکە</div>
+            <div><i class="fas fa-clock header-icon"></i> کاتی (هاتن / دەرچوون)</div>
+            <div><i class="fas fa-fingerprint header-icon"></i> دۆخی ئێستا</div>
+            <div><i class="fas fa-tags header-icon"></i> پۆڵێن</div>
+            <div style="text-align: center;"><i class="fas fa-comment-dots header-icon"></i> ڕوونکردنەوە</div>
+        </div>
+    `;
 
     // پۆلێنکردن بەپێی بنکە
     const grouped = employees.reduce((acc, emp) => {
@@ -235,24 +254,30 @@ function renderAttendance(attendance, employees) {
 
     for (const [branch, emps] of Object.entries(grouped)) {
         const section = document.createElement('div');
-        section.innerHTML = `<div class="branch-group-header"><span>${branch}</span> <span>${emps.length} فەرمانبەر</span></div>`;
+        section.className = "branch-group-container";
         
         emps.forEach(emp => {
             const record = attendance.find(a => a.user_id === emp.id);
             const row = document.createElement('div');
             row.className = 'attendance-item';
+            let employeeClassifications = []; // لیستێک بۆ کۆکردنەوەی هەموو پۆڵێنەکان
+            const just = justificationsCache.find(j => j.user_id === emp.id);
+            const hasJustification = !!just;
             
             if (record) {
                 const checkIn = new Date(record.check_in_time);
                 const inTime = checkIn.getHours() * 60 + checkIn.getMinutes();
                 
                 // حیسابکردنی جۆری هاتن
-                if (inTime < 510) { // پێش 8:30
+                if (inTime < 510) {
                     stats.earlyIn++;
+                    employeeClassifications.push({ label: 'پێش 8:30', class: 'badge-early', icon: 'fas fa-user-check' });
                 } else if (inTime <= 540) { // 8:30 - 9:00
                     stats.lateIn++;
+                    employeeClassifications.push({ label: '8:30 - 9:00', class: 'badge-warn', icon: 'fas fa-user-clock' });
                 } else { // دوای 9:00
                     stats.veryLateIn++;
+                    employeeClassifications.push({ label: 'دوای 9:00', class: 'badge-orange', icon: 'fas fa-user-clock' });
                 }
 
                 // حیسابکردنی جۆری دەرچوون (ئەگەر کرابێت)
@@ -261,27 +286,52 @@ function renderAttendance(attendance, employees) {
                     const outTime = checkOut.getHours() * 60 + checkOut.getMinutes();
                     
                     if (outTime < 870) { // پێش 2:30 (14:30)
-                        stats.earlyOut++;
+                       stats.earlyOut++;
+                        employeeClassifications.push({ label: 'دەرچوونی پێشوەختە', class: 'badge-danger', icon: 'fas fa-door-open' });
                     } else { // دوای 2:30
                         stats.onTimeOut++;
+                        employeeClassifications.push({ label: 'دەرچوونی ئاسایی', class: 'badge-early', icon: 'fas fa-walking' });
                     }
                 } else {
                     // هاتنی کردووە بەڵام دەرنەچووە
                     stats.notCheckedOut++;
+                    employeeClassifications.push({ label: 'دەرنەچوو', class: 'badge-warn', icon: 'fas fa-hourglass-half' });
                 }
             } else {
                 // ئەگەر هیچ ڕیکۆردێکی نەبوو، واتە نەهاتووە
                 stats.absent++;
+                employeeClassifications.push({ label: 'نەهاتوو', class: 'badge-danger', icon: 'fas fa-user-slash' });
+            }
+
+            // ئەگەر ڕوونکردنەوەی هەبوو، ئایکۆنەکەی بۆ زیاد بکە
+            if (hasJustification) {
+                employeeClassifications.push({ label: 'ڕوونکردنەوە', class: 'badge-blue', icon: 'fas fa-file-signature' });
             }
             
-            const timeIn = record ? new Date(record.check_in_time).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12: true}) : '---';
-            const status = record ? '<span class="status-pill status-present">ئامادەبوو</span>' : '<span class="status-pill status-absent">نەهاتوو</span>';
+            const tIn = record ? new Date(record.check_in_time).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12: true}) : '--:--';
+            const tOut = record?.check_out_time ? new Date(record.check_out_time).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12: true}) : '--:--';
+            const statusLabel = record ? '<span class="status-pill status-present">ئامادەبوو</span>' : '<span class="status-pill status-absent">نەهاتوو</span>';
             
             row.innerHTML = `
-                <div style="font-weight: 700; color: var(--text-main);">${emp.full_name}</div>
-                <div style="font-family: monospace; font-weight: bold;">${timeIn}</div>
-                <div>${status}</div>
-                <div style="text-align: left;"><button onclick="viewDetails('${emp.id}')" class="lang-dropbtn" style="height:32px; padding: 0 15px;">ووردەکاری <i class="fas fa-chevron-left" style="font-size: 0.7rem; margin-right: 5px;"></i></button></div>
+                <div class="emp-name-col">
+                    <span class="emp-name">${emp.full_name}</span>
+                </div>
+                <div class="emp-branch-col">${branch}</div>
+                <div class="emp-time-col">
+                    <span class="time-in"><i class="fas fa-long-arrow-alt-down"></i> ${tIn}</span>
+                    <span class="time-out"><i class="fas fa-long-arrow-alt-up"></i> ${tOut}</span>
+                </div>
+                <div>${statusLabel}</div>
+                <div class="class-badge-col">
+                    ${employeeClassifications.map(c => `
+                        <span class="class-badge ${c.class}" title="${c.label}"><i class="${c.icon}"></i></span>
+                    `).join('')}
+                </div>
+                <div class="just-col">
+                    <div class="just-icon-wrapper ${hasJustification ? 'active' : ''}" onclick="viewDetails('${emp.id}')" title="${hasJustification ? just.reason : 'بێ ڕوونکردنەوە'}">
+                        <i class="fas fa-file-signature"></i>
+                    </div>
+                </div>
             `;
             section.appendChild(row);
         });
@@ -299,8 +349,19 @@ function renderAttendance(attendance, employees) {
 }
 
 function viewDetails(userId) {
-    // لێرە دەتوانین مۆداڵێک بکەینەوە بۆ بینینی لۆکەیشن یان ڕیسێت کردنی ئامێر
-    alert("ووردەکاری بۆ فەرمانبەر: " + userId);
+    const staff = staffCache.find(s => s.id === userId);
+    const just = justificationsCache.find(j => j.user_id === userId);
+
+    document.getElementById('justUserTitle').innerText = `ڕوونکردنەوەی: ${staff ? staff.full_name : 'فەرمانبەر'}`;
+    document.getElementById('justTextContent').innerText = just ? just.reason : 'بۆ ئەم ڕێکەوتە هیچ ڕوونکردنەوەیەک نەنووسراوە.';
+    document.getElementById('justModal').style.display = 'flex';
+}
+
+// داخستنی مۆداڵەکە بە کلیک لە دەرەوە
+function closeJustModal(event) {
+    if (event.target.id === 'justModal') {
+        event.target.style.display = 'none';
+    }
 }
 
 function handlePrint() {
