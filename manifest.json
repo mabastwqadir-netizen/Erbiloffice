@@ -1,11 +1,11 @@
 {
-  "name": "IHEC Attendance System",
-  "short_name": "IHEC InOut",
-  "description": "IHEC Attendance and Departure System",
+  "name": "Attendance System - Ihec",
+  "short_name": "Ihec InOut",
+  "description": "Attendance and Departure System - Ihec",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0062ff",
+  "theme_color": "#ffffff",
   "icons": [
     {
       "src": "assets/icon.png",
