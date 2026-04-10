@@ -18,19 +18,19 @@
 
     <div class="top-controls">
         <!-- Theme Toggle Icon Only -->
-        <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeBtn" title="Change Theme"> <!-- Added id="themeBtn" -->
+        <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeBtn" title="Change Theme" data-i18n="changeTheme" aria-label="Change Theme"> <!-- Added id="themeBtn" -->
             <i class="fas fa-sun"></i>
         </button>
 
         <!-- Modern Language Dropdown -->
         <div class="lang-dropdown">
             <button class="lang-dropbtn" onclick="toggleLangDropdown(event)">
-                <img id="current-flag" src="https://flagcdn.com/w40/iq.png" class="flag-img"> 
+                <img id="current-flag" src="https://flagcdn.com/w40/iq.png" class="flag-img" alt="Language Flag"> 
                 <span id="current-lang-text">عربي</span>
             </button>
             <div class="lang-dropdown-content">
-                <div onclick="setLang('ku')"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Flag_of_Kurdistan.svg/40px-Flag_of_Kurdistan.svg.png" class="flag-img"> کوردی</div>
-                <div onclick="setLang('ar')"><img src="https://flagcdn.com/w40/iq.png" class="flag-img"> عربي</div>
+                <div onclick="setLang('ku')"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Flag_of_Kurdistan.svg/40px-Flag_of_Kurdistan.svg.png" class="flag-img" alt="Kurdish Flag"> کوردی</div>
+                <div onclick="setLang('ar')"><img src="https://flagcdn.com/w40/iq.png" class="flag-img" alt="Iraq Flag"> عربي</div>
             </div>
         </div>
     </div>
@@ -71,7 +71,7 @@
     </div>
 
     <!-- Update Modal -->
-    <div id="updateModal" class="modal-overlay" style="display: none;">
+    <div id="updateModal" class="modal-overlay">
         <div class="modal-window update-card">
             <div class="update-header">
                 <div class="update-icon-wrapper">
@@ -79,8 +79,8 @@
                 </div>
             </div>
             <div class="update-body">
-                <h3 data-i18n="updateTitle" style="margin-bottom: 12px; font-size: 1.4rem;">وەشانی نوێ</h3>
-                <p data-i18n="updateMsg" style="margin-bottom: 25px; font-size: 0.95rem; color: var(--text-sub); line-height: 1.6;"></p>
+                <h3 data-i18n="updateTitle">وەشانی نوێ</h3>
+                <p data-i18n="updateMsg"></p>
                 <button class="login-btn update-btn" onclick="forceUpdateApp()">
                     <i class="fas fa-bolt"></i> <span data-i18n="updateBtn">نوێکردنەوە</span>
                 </button>
@@ -91,18 +91,18 @@
        <!-- Modern PWA Install Prompt -->
     <div id="pwaBanner" class="pwa-banner">
         <div class="pwa-handle"></div>
-        <button class="pwa-close-btn" onclick="hidePwaPrompt()"><i class="fas fa-times"></i></button>
+        <button class="pwa-close-btn" onclick="hidePwaPrompt()" aria-label="Close" data-i18n="close"><i class="fas fa-times"></i></button>
         <div class="pwa-content">
-            <img src="assets/icon.png" class="pwa-icon">
-            <div style="flex: 1;">
-                <h4 data-i18n="pwaTitle" style="margin-bottom: 4px;">ئەپەکە دابەزێنە</h4>
-                <p data-i18n="pwaDesc" style="font-size: 0.8rem; color: var(--text-sub);"></p>
+            <img src="assets/icon.png" class="pwa-icon" alt="App Icon">
+            <div class="pwa-text">
+                <h4 data-i18n="pwaTitle">ئەپەکە دابەزێنە</h4>
+                <p data-i18n="pwaDesc"></p>
             </div>
         </div>
-        <button id="pwaInstallBtn" class="login-btn" style="width: 100%; max-width: 400px;">
+        <button id="pwaInstallBtn" class="login-btn pwa-install-btn">
             <i class="fas fa-download"></i> <span data-i18n="pwaInstall">دابەزاندن</span>
         </button>
-        <div id="pwaIosHint" class="pwa-ios-hint" style="display: none;" data-i18n="pwaIOSMsg"></div>
+        <div id="pwaIosHint" class="pwa-ios-hint" data-i18n="pwaIOSMsg"></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

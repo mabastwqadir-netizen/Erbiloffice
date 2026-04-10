@@ -175,12 +175,16 @@ body {
 
 .lang-dropdown-content div:hover { background: var(--input-bg); color: var(--primary); }
 
+#welcomeUser {
+    margin-bottom: 5px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
 .login-card {
     background: var(--card-bg);
     padding: 25px 25px;
     border-radius: 24px;
-    width: 90%;
-    max-width: 400px; /* Slightly narrower for better focus */
     width: 100%;
     max-width: 440px; /* کەمێک زیادکرا بۆ ئەوەی کالێندەرەکە جێگیر بێت */
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08); /* More modern, soft shadow */
@@ -288,13 +292,17 @@ input:focus + .input-icon { color: var(--accent-pink); }
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    display: none; /* JS switches to flex */
+    backdrop-filter: blur(8px);
+    display: none; /* Default hidden without inline style */
     justify-content: center;
     align-items: center;
     z-index: 9999;
     padding: 20px;
+}
+
+.confirm-modal-window {
+    max-width: 320px !important;
 }
 
 .modal-window {
@@ -307,6 +315,14 @@ input:focus + .input-icon { color: var(--accent-pink); }
     box-shadow: var(--shadow);
     border: 1px solid var(--border-color);
     animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal-icon {
+    color: var(--primary);
+    font-size: 2rem;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
 }
 
 /* Modern Update Modal Specific Styling */
@@ -330,6 +346,7 @@ input:focus + .input-icon { color: var(--accent-pink); }
     width: 45px;
     height: 45px;
     background: rgba(255, 255, 255, 0.2);
+    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     border-radius: 50%;
     display: flex;
@@ -347,6 +364,23 @@ input:focus + .input-icon { color: var(--accent-pink); }
 
 .update-body {
     padding: 15px 20px;
+}
+
+.update-body h3, .update-body h4 {
+    margin-bottom: 12px;
+    font-size: 1.4rem;
+    color: var(--text-main);
+}
+
+.update-body p {
+    margin-bottom: 25px;
+    font-size: 0.95rem;
+    color: var(--text-sub);
+    line-height: 1.6;
+}
+
+.update-body .login-btn {
+    margin-top: 10px;
 }
 
 .update-btn {
@@ -493,6 +527,13 @@ input:focus + .input-icon { color: var(--accent-pink); }
         gap: 8px;
     }
 
+.calendar-nav-btn {
+    padding: 4px 8px !important;
+    font-size: 0.8rem !important;
+    width: auto !important;
+    height: auto !important;
+}
+
     .calendar-grid {
         gap: 3px;
     }
@@ -543,6 +584,16 @@ input:focus + .input-icon { color: var(--accent-pink); }
     color: var(--text-sub);
     margin-top: 5px;
     font-weight: 500;
+}
+
+#confirmTitle {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+}
+
+#confirmMsg {
+    font-size: 0.9rem;
+    color: var(--text-sub);
 }
 
 .location-info {
@@ -608,11 +659,7 @@ input:focus + .input-icon { color: var(--accent-pink); }
 .checkout-active {
     background: linear-gradient(135deg, #ef4444, #dc2626) !important;
     box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3) !important;
-}
-
-.checkout-active {
-    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
-    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3) !important;
+    display: none; /* Default hidden */
 }
 
 /* Modern Error Message for Login */
@@ -641,13 +688,16 @@ input:focus + .input-icon { color: var(--accent-pink); }
     border-radius: 20px;
     font-size: 0.85rem;
     font-weight: 600;
+    margin-top: 10px;
     margin-bottom: 15px;
     border: 1px solid rgba(34, 197, 94, 0.2);
     direction: ltr; /* بۆ ئەوەی کاتی هاتن لە ناو باجەکە ڕێك بێت */
+    display: none; /* Default hidden */
 }
 
 /* Calendar Animation */
 #calendarWrapper {
+    display: none;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     transform-origin: top;
 }
@@ -682,6 +732,12 @@ input:focus + .input-icon { color: var(--accent-pink); }
     transform: translateY(-1px);
 }
 
+.history-btn {
+    font-size: 0.9rem !important;
+    padding: 10px !important;
+    box-shadow: none !important;
+}
+
 .calendar-container {
     background: var(--input-bg);
     border-radius: 18px;
@@ -703,6 +759,13 @@ input:focus + .input-icon { color: var(--accent-pink); }
     align-items: center;
     margin-bottom: 10px;
 }
+
+#monthDisplay {
+    font-size: 0.9rem;
+    margin: 0;
+    color: var(--text-main);
+}
+
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -887,6 +950,16 @@ min-height: 80px; /* Ensure consistent height for both items */
     box-shadow: 0 4px 12px rgba(0, 98, 255, 0.3);
 }
 
+.btn-secondary {
+    box-shadow: none !important;
+    background: var(--border-color) !important;
+    color: var(--text-main) !important;
+}
+
+.btn-confirm {
+    margin: 0 !important;
+}
+
 /* --- PWA Install Banner (Modern Bottom Sheet) --- */
 .pwa-banner {
     position: fixed;
@@ -926,6 +999,24 @@ min-height: 80px; /* Ensure consistent height for both items */
     text-align: right;
 }
 
+.pwa-text {
+    flex: 1;
+}
+
+.pwa-text h4 {
+    margin-bottom: 4px;
+}
+
+.pwa-text p {
+    font-size: 0.8rem;
+    color: var(--text-sub);
+}
+
+.pwa-install-btn {
+    width: 100%;
+    max-width: 400px;
+}
+
 .pwa-icon {
     width: 60px;
     height: 60px;
@@ -934,6 +1025,7 @@ min-height: 80px; /* Ensure consistent height for both items */
 }
 
 .pwa-ios-hint {
+    display: none;
     font-size: 0.85rem;
     color: var(--primary);
     font-weight: 600;
@@ -962,4 +1054,4 @@ min-height: 80px; /* Ensure consistent height for both items */
 }
 
 @keyframes modalPop {
-    from { opacity: 0; transform: scale(0.9) translateY(20px); }
+    from { opacity: 0; transform: scale(0.9) translateY(20px); } }

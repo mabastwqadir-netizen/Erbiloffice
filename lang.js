@@ -69,6 +69,7 @@ const translations = {
         pwaDesc: "بۆ ئەزموونێکی باشتر و خێراتر، ئەپەکە بخەرە سەر شاشەی سەرەکی.",
         pwaInstall: "دابەزاندن",
         pwaIOSMsg: "کلیک لە 'Share' بکە و پاشان 'Add to Home Screen' هەڵبژێرە.",
+        changeTheme: "گۆڕینی ڕەنگ (تێم)",
         justification: "ڕوونکردنەوەی فەرمی",
         vpnError: "هەڵە: VPN چالاک کراوە! تکایە بیکوژێنەرەوە بۆ ئەوەی بتوانیت هاتن و دەرچوون تۆمار بکەیت.",
         mockLocationError: "هەڵە: لۆکەیشنی ساختە (Fake GPS) دۆزرایەوە! تکایە ئەپەکان بکوژێنەرەوە.",
@@ -145,6 +146,7 @@ const translations = {
         pwaDesc: "للحصول على تجربة أفضل وأسرع، قم بتثبيت التطبيق على شاشتك الرئيسية.",
         pwaInstall: "تثبيت",
         pwaIOSMsg: "اضغط على 'Share' ثم اختر 'Add to Home Screen'.",
+        changeTheme: "تغيير المظهر",
         justification: "تبرير رسمي",
         vpnError: "خطأ: تم اكتشاف VPN! يرجى إيقاف تشغيله لتتمكن من تسجيل الحضور والانصراف.",
         mockLocationError: "خطأ: تم اكتشاف موقع وهمي (Fake GPS)! يرجى إيقاف تشغيل التطبيقات.",
@@ -176,11 +178,16 @@ function applyLanguage() {
 
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
-        if (translations[currentLang][key]) {
-            if (el.tagName === 'INPUT' && el.hasAttribute('placeholder')) {
-                el.placeholder = translations[currentLang][key];
+        const translation = translations[currentLang][key];
+        if (translation) {
+            if ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.hasAttribute('placeholder')) {
+                el.placeholder = translation;
+            } else if (el.hasAttribute('aria-label')) {
+                el.setAttribute('aria-label', translation);
+            } else if (el.hasAttribute('title')) {
+                el.setAttribute('title', translation);
             } else {
-                el.innerText = translations[currentLang][key];
+                el.innerText = translation;
             }
         }
     });
