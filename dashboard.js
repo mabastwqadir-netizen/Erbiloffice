@@ -243,6 +243,14 @@ function startTracking() {
 
     watchID = navigator.geolocation.watchPosition(
         (position) => {
+            // پشکنینی لۆکەیشنی ساختە
+            if (isLocationSpoofed(position)) {
+                updateVerifyUI('location', false, null, translations[currentLang].mockLocationError);
+                [btn, outBtn].forEach(b => { if(b) b.disabled = true; });
+                if (watchID) navigator.geolocation.clearWatch(watchID);
+                return;
+            }
+
             userPos = position.coords; // Update userPos with current coordinates
             const accuracy = Math.round(userPos.accuracy);
             const isAccurateEnough = accuracy <= 150; // GPS accuracy check
@@ -395,10 +403,48 @@ function updateVerifyUI(type, isValid, state, message = '') {
     }
 }
 
+// --- پشکنینی VPN و ناوچەی کاتی ---
+async function isVPNActive() {
+    // ١. پشکنینی ناوچەی کاتی (خێراترین ڕێگە بەبێ سێرڤەر)
+    const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (deviceTimezone !== 'Asia/Baghdad') {
+        console.warn("Timezone mismatch detected:", deviceTimezone);
+        return true;
+    }
+
+    // ٢. پشکنینی ئایپی لە ڕێگەی خزمەتگوزاری دەرەکی (ئارەزوومەندانە بەڵام زۆر وردە)
+    try {
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        // ئەگەر ئایپییەکە هی Proxy یان VPN بێت، زۆربەی جار لە داتاکەدا دیارە
+        if (data.security && (data.security.vpn || data.security.proxy)) return true;
+        if (data.country_code !== 'IQ') return true; // ئەگەر لە عێراق نەبوو
+    } catch (e) { console.error("VPN Check Failed", e); }
+
+    return false;
+}
+
+// --- پشکنینی لۆکەیشنی ساختە (Fake GPS Detection) ---
+function isLocationSpoofed(position) {
+    // ١. پشکنینی ئاڵای mocked کە لە هەندێک وێبگەڕدا هەیە
+    if (position.mocked || (position.coords && position.coords.mocked)) return true;
+
+    // ٢. پشکنینی وردی گوماناوی (ئەگەر وردی تەنها ٠ یان ١ مەتر بوو، یان زۆر جێگیر بوو)
+    if (position.coords.accuracy < 1) return true;
+
+    return false;
+}
+
 // --- ٤. کرداری هاتن (Check In) ---
 async function processCheckIn() {
     const btn = document.getElementById('checkinBtn');
     const txt = document.getElementById('checkinText');
+
+    // پشکنینی VPN پێش دەستپێکردن
+    if (await isVPNActive()) {
+        updateStatus(translations[currentLang].vpnError, "error");
+        return;
+    }
 
     // پشکنین بۆ ئەوەی بزانین ئایا لەم ڕۆژەدا هیچ تۆمارێکی هەیە (هاتن یان دەرچوون)
     const { start, end } = getTodayBounds();
@@ -507,6 +553,12 @@ async function processCheckIn() {
 async function processCheckOut() {
     const btn = document.getElementById('checkoutBtn');
     if (!currentUser) return;
+
+    // پشکنینی VPN پێش دەرچوون
+    if (await isVPNActive()) {
+        updateStatus(translations[currentLang].vpnError, "error");
+        return;
+    }
 
     if (!userPos) {
         updateStatus(translations[currentLang].msgLocErr, "error");
