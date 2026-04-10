@@ -135,7 +135,15 @@ function toggleTheme() {
 // دڵنیابوونەوە لەوەی کاتێک لاپەڕەکە کرایەوە Theme جێبەجێ دەبێت
 document.addEventListener('DOMContentLoaded', async () => {
     const reloadTriggered = await checkAppVersion();
-    if (!reloadTriggered) applyTheme(); // Apply theme only if no reload was triggered
+    if (!reloadTriggered) {
+        applyTheme();
+        
+        // چالاککردنی کلیلی Enter بۆ چوونەژوورەوە
+        const loginInputs = document.querySelectorAll('#email, #password');
+        loginInputs.forEach(input => {
+            input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+        });
+    }
 });
 
 // --- ٣. فانکشنەکانی لاپەڕەی چوونەژوورەوە ---
@@ -191,15 +199,15 @@ async function handleLogin() {
     errorMsg.style.display = 'none';
 
     if (!email || !password) {
-        errorMsg.innerText = translations[currentLang].errorEmpty;
-        errorMsg.style.display = 'block';
+        errorMsg.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>${translations[currentLang].errorEmpty}</span>`;
+        errorMsg.style.display = 'flex';
         return;
     }
 
     // دەستپێکردنی لۆدینگ و گۆڕینی تێکستی دوگمەکە
     btn.disabled = true;
     loader.style.display = 'block';
-    btnText.innerText = translations[currentLang].waitText;
+    if (btnText) btnText.innerText = translations[currentLang].waitText;
 
     try {
         // بەکارهێنانی supabaseClient بۆ چوونەژوورەوە
@@ -210,8 +218,9 @@ async function handleLogin() {
 
         if (error) {
             // ئەگەر هەڵەیەک هەبوو لە لایەن سوپابەیسەوە
-            errorMsg.innerText = currentLang === 'ku' ? "ئیمەیڵ یان پاسوۆرد هەڵەیە!" : "البريد الإلكتروني أو كلمة المرور غير صحيحة!";
-            errorMsg.style.display = 'block';
+            const msg = currentLang === 'ku' ? "ئیمەیڵ یان پاسوۆرد هەڵەیە!" : "البريد الإلكتروني أو كلمة المرور غير صحيحة!";
+            errorMsg.innerHTML = `<i class="fas fa-exclamation-circle"></i> <span>${msg}</span>`;
+            errorMsg.style.display = 'flex';
             
             // گەڕاندنەوەی دوگمەکە بۆ دۆخی ئاسایی
             btn.disabled = false;

@@ -24,8 +24,9 @@
 
         <!-- Modern Language Dropdown -->
         <div class="lang-dropdown">
-            <button class="lang-dropbtn" id="langBtn" onclick="toggleLangDropdown(event)">
-                <img src="https://flagcdn.com/w40/iq.png" class="flag-img"> عربي
+            <button class="lang-dropbtn" onclick="toggleLangDropdown(event)">
+                <img id="current-flag" src="https://flagcdn.com/w40/iq.png" class="flag-img"> 
+                <span id="current-lang-text">عربي</span>
             </button>
             <div class="lang-dropdown-content">
                 <div onclick="setLang('ku')"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Flag_of_Kurdistan.svg/40px-Flag_of_Kurdistan.svg.png" class="flag-img"> کوردی</div>

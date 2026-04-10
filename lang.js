@@ -161,10 +161,12 @@ function applyLanguage() {
     if (langBtn && flag) {
         if (currentLang === 'ku') {
             langBtn.innerText = 'کوردی';
-            flag.className = 'flag-icon flag-ku';
+            if (flag.tagName === 'IMG') flag.src = 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Flag_of_Kurdistan.svg/40px-Flag_of_Kurdistan.svg.png';
+            else flag.className = 'flag-icon flag-ku';
         } else {
             langBtn.innerText = 'العربية';
-            flag.className = 'flag-icon flag-ar';
+            if (flag.tagName === 'IMG') flag.src = 'https://flagcdn.com/w40/iq.png';
+            else flag.className = 'flag-icon flag-ar';
         }
     }
 
