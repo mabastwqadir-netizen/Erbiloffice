@@ -3,7 +3,7 @@
 const translations = {
     ku: {
         title: "IHEC Erbil Office",
-        subtitle: "سیستەمی هاتن و دەچوونی فەرمانبەران",
+        subtitle: "سیستەمی هاتن و دەرچوونی فەرمانبەران",
         emailLabel: "ئیمەیڵی فەرمی",
         passLabel: "تێپەڕەوشە (پاسوۆرد)",
         loginBtnText: "چوونە ژوورەوە",
@@ -59,7 +59,7 @@ const translations = {
         invalidDevice: "ئامێر نەناسراوە",
         noBranch: "زانیاری بنکە نییە",
         waitRecord: "تۆمارکردن...",
-        deviceTaken: "ئەم ئامێرە بۆ هەژمارێکی تر بەکارهاتووە",
+        deviceTaken: "هەمان ئامێری پێشوو نییە",
         alreadyCheckedIn: "تۆ پێشتر هاتنت تۆمار کردووە.",
         dailyLimitReached: "تۆ ئەمڕۆ (هاتن و دەرچوون)ی خۆتت تۆمارکردووە و گەیشتووی بە سنووری ڕۆژانە ",
         updateTitle: "وەشانی نوێ بەردەستە",
@@ -128,7 +128,7 @@ const translations = {
         invalidDevice: "جهاز غير معروف",
         noBranch: "لا توجد معلومات عن الفرع",
         waitRecord: "جاري التسجيل...",
-        deviceTaken: "هذا الجهاز مسجل لحساب آخر",
+        deviceTaken: "الجهاز المستخدم سابقًا غير متاح",
         alreadyCheckedIn: "لقد سجلت حضورك بالفعل لهذا اليوم.",
         dailyLimitReached: "لقد أكملت تسجيل الحضور والانصراف لهذا اليوم وبلغت الحد الأقصى اليومي.",
         updateTitle: "تحديث جديد متاح",
