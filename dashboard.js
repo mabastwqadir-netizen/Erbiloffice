@@ -87,8 +87,6 @@ function executeConfirmedAction() {
 
 function manualRefreshLocation() {
     locationAttempts = 0;
-    const refreshBtn = document.getElementById('refreshLocBtn');
-    if (refreshBtn) refreshBtn.style.display = 'none';
     startTracking();
 }
 
@@ -178,7 +176,6 @@ function startTracking() {
     const btn = document.getElementById('checkinBtn');
     const outBtn = document.getElementById('checkoutBtn');
     const txt = document.getElementById('checkinText');
-    const refreshBtn = document.getElementById('refreshLocBtn');
 
     if (!navigator.geolocation) {
         updateStatus(translations[currentLang].noLocSupport, "error");
@@ -192,7 +189,6 @@ function startTracking() {
     if (locationAttempts >= 3) {
         updateVerifyUI('location', false, null, translations[currentLang].errorFetch);
         if (txt) txt.innerText = translations[currentLang].retryBtn;
-        if (refreshBtn) refreshBtn.style.display = 'flex';
         // Disable buttons if location is not determined after attempts
         [btn, outBtn].forEach(b => { if(b) b.disabled = true; });
         return;
@@ -201,7 +197,6 @@ function startTracking() {
     locationAttempts++;
     userPos = null; // پاککردنەوەی داتای پێشوو بۆ دڵنیایی زیاتر
 
-    if (refreshBtn) refreshBtn.style.display = 'none';
     if (txt && btn.style.display !== 'none') txt.innerText = `${translations[currentLang].searching} (${locationAttempts}/3)`; // Update checkin button text
     updateVerifyUI('location', null, 'loading', `${translations[currentLang].searching} (${locationAttempts}/3)`);
 
@@ -315,7 +310,6 @@ function startTracking() {
                 startTracking();
             } else {
                 if (watchID) navigator.geolocation.clearWatch(watchID); // Ensure watch is cleared
-                if (refreshBtn) refreshBtn.style.display = 'flex';
                 // Update UI based on why it failed after attempts
             if (!isAccurateEnough) updateVerifyUI('location', false, null, translations[currentLang].gpsWeak);
             else if (!isWithinGeofence) updateVerifyUI('location', false, null, translations[currentLang].notSuitable);
@@ -356,6 +350,13 @@ function updateVerifyUI(type, isValid, state, message = '') {
         el.classList.add('verify-error');
         statusIconEl.innerHTML = '<i class="fas fa-times-circle"></i>';
         statusTextEl.innerText = message || translations[currentLang].errorFetch;
+    }
+
+    // نیشاندانی دوگمەی دووبارە پشکنین تەنها ئەگەر یەکێک لە مەرجەکان سوور بوو
+    const hasError = document.querySelectorAll('.verify-item.verify-error').length > 0;
+    const refreshBtn = document.getElementById('refreshLocBtn');
+    if (refreshBtn) {
+        refreshBtn.style.display = hasError ? 'flex' : 'none';
     }
 }
 

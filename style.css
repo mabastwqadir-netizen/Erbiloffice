@@ -765,7 +765,7 @@ min-height: 80px; /* Ensure consistent height for both items */
 }
 
 #refreshLocBtn {
-    display: block !important; /* Ensure it's a block element */
+    display: none; /* بە شێوەی بنەڕەتی شاراوەیە، تەنها لە کاتی هەڵە دەردەکەوێت */
     margin: 10px auto 0 auto !important; /* Center it below accuracy area */
     background: var(--primary);
     color: white;
