@@ -486,9 +486,9 @@ input[type="date"]:focus::-webkit-calendar-picker-indicator {
 
 .print-btn {
     height: 45px;
-    background: var(--card-bg);
-    border: 1.5px solid var(--primary);
-    color: var(--primary);
+    background: rgb(6, 42, 85);
+    color: white;
+    border: none;
     border-radius: 12px;
     font-weight: 700;
     cursor: pointer;
@@ -503,6 +503,7 @@ input[type="date"]:focus::-webkit-calendar-picker-indicator {
 .print-btn:hover {
     background: var(--primary);
     color: white;
+    border: 1.5px whitesmoke;
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(var(--primary-rgb), 0.2);
 }
@@ -1037,5 +1038,4 @@ input[type="date"]:focus::-webkit-calendar-picker-indicator {
     transform: translateY(-3px);
     border-color: var(--primary);
     box-shadow: 0 8px 15px rgba(0, 98, 255, 0.1);
-    background: #fff;
 }

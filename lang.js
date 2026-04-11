@@ -120,7 +120,7 @@ const translations = {
         deleteJustification: "سڕینەوەی ڕوونکردنەوە",
         deleteConfirmMsg: "ئایا دڵنیایت لە سڕینەوەی ئەم ڕوونکردنەوەیە بە تەواوەتی؟",
         deleteSuccess: "ڕوونکردنەوەکە بە سەرکەوتوویی سڕایەوە",
-        updateSuccess: "چاککردن سەرکەوتوو بوو",
+        updateSuccess: "سەرکەوتوو بوو",
         print: "چاپکردن",
         copyrightText: "هەموو مافێك پارێزراوە بۆ ئۆفیسی پارێزگای هەولێر",
         developedBy: "گەشەپێدراوە لەلایەن"
@@ -244,7 +244,7 @@ const translations = {
         deleteJustification: "حذف التبرير",
         deleteConfirmMsg: "هل أنت متأكد من حذف هذا التبرير نهائياً؟",
         deleteSuccess: "تم حذف التبرير بنجاح",
-        updateSuccess: "تم التعديل بنجاح",
+        updateSuccess: "تم بنجاح",
         print: "طباعة",
         copyrightText: "جميع الحقوق محفوظة لمكتب محافظة أربيل",
         developedBy: "تم التطوير بواسطة"
