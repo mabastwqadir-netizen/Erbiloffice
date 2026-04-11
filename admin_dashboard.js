@@ -384,10 +384,12 @@ function toggleStatsMobile() {
 
 function toggleAttendanceMobile() {
     const attendanceContainer = document.querySelector('.attendance-container');
+    const filterSection = document.querySelector('.filter-section');
     const toggleBtn = document.querySelector('.mobile-attendance-toggle');
     const toggleText = document.getElementById('attendanceToggleText');
     
     const isExpanded = attendanceContainer.classList.toggle('expanded');
+    filterSection.classList.toggle('expanded');
     toggleBtn.classList.toggle('active');
     
     // گۆڕینی تێکستەکە بەپێی زمان
