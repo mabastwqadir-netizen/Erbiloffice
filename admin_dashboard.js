@@ -206,20 +206,26 @@ window.addEventListener('click', (e) => {
 function renderAdmins(admins) {
     const container = document.getElementById('adminsSection');
     const listDiv = document.getElementById('adminsList');
+    const countBadge = document.getElementById('adminOnlineCount');
     
-    if (admins && admins.length > 0) {
+    // فلتەرکردنی تەنها ئەو ئادمینانەی کە ئێستا لەسەر هێڵن
+    const onlineList = admins.filter(adm => 
+        Object.values(onlineAdmins).flat().some(presence => presence.user_id === adm.id)
+    );
+
+    if (onlineList.length > 0) {
         container.style.display = 'flex';
         
-        listDiv.innerHTML = admins.map(adm => {
-            // لۆجیکی نوێ: گەڕان لە ناو تەواوی لیستی Presence بۆ دۆزینەوەی ئایدی بەکارهێنەر
-            const isOnline = Object.values(onlineAdmins).flat().some(presence => presence.user_id === adm.id);
-            
-            return `
-                <div class="admin-chip ${isOnline ? 'online' : ''}">
-                    <i class="fas fa-user-tie"></i> ${adm.full_name}
-                </div>
-            `;
-        }).join('');
+        // نوێکردنەوەی نیشانەی ژمارە لەسەر دوگمەکە
+        if (countBadge) {
+            countBadge.innerText = `${onlineList.length} ${translations[currentLang].countPerson}`;
+        }
+
+        listDiv.innerHTML = onlineList.map(adm => `
+            <div class="admin-chip online">
+                <i class="fas fa-user-tie"></i> ${adm.full_name}
+            </div>
+        `).join('');
 
         // هەمیشە کڵاسی درۆپ داون چالاک بکە بۆ مۆبایل
         container.classList.add('mobile-admin-dropdown');
