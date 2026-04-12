@@ -126,7 +126,7 @@ const translations = {
         adminDeptManager: "بەرپرسی بەشی کارگێڕی",
         officeManagerSign: "بەڕێوەبەری ئۆفیس",
         copyrightText: "هەموو مافێك پارێزراوە بۆ ئۆفیسی پارێزگای هەولێر",
-        developedBy: "گەشەیپێدراوە لەلایەن",
+        developedBy: "بیرۆکە و پەرەپێدان ",
         tebini:"تێبینی"
     },
     ar: {
@@ -254,7 +254,7 @@ const translations = {
         adminDeptManager: "مسؤول القسم الإداري",
         officeManagerSign: "مدير المكتب",
         copyrightText: "جميع الحقوق محفوظة لمكتب محافظة أربيل",
-        developedBy: "تم التطوير بواسطة",
+        developedBy: "التفکیر وَتَطْوِير",
         tebini:"ملاحظة"
 
     }

@@ -589,9 +589,9 @@ function handlePrint() {
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 40px;">#</th>
-                            <th style="text-align: right; padding-right: 15px; width: 35%;">${t.colName}</th>
-                            <th style="width: 25%;">${t.colBranch}</th>
+                            <th style="width: 25px;">#</th>
+                            <th style="text-align: right; padding-right: 15px; width: 30%;">${t.colName}</th>
+                            <th style="width: 15%;">${t.colBranch}</th>
                             <th style="width: 85px;">${t.arrival}</th>
                             <th style="width: 85px;">${t.checkout}</th>
                             <th style="width: 110px;">${t.tebini}</th>
