@@ -416,12 +416,9 @@ function renderAttendance(attendance, employees) {
                 const inTime = checkIn.getHours() * 60 + checkIn.getMinutes();
                 
                 // حیسابکردنی جۆری هاتن
-                if (inTime < 510) {
+                if (inTime <= 540) { // پێش ٩:٠٠ (٩ چرکە * ٦٠ خولەک = ٥٤٠)
                     stats.earlyIn++;
                     employeeClassifications.push({ label: translations[currentLang].earlyIn, class: 'badge-early', icon: 'fas fa-user-check' });
-                } else if (inTime <= 540) { // 8:30 - 9:00
-                    stats.lateIn++;
-                    employeeClassifications.push({ label: translations[currentLang].midIn, class: 'badge-warn', icon: 'fas fa-user-clock' });
                 } else { // دوای 9:00
                     stats.veryLateIn++;
                     employeeClassifications.push({ label: translations[currentLang].veryLateInAdmin, class: 'badge-orange', icon: 'fas fa-user-clock' });
@@ -489,7 +486,7 @@ function renderAttendance(attendance, employees) {
 
     // نوێکردنەوەی کارتەکان لە UI
     document.getElementById('countEarlyIn').innerText = stats.earlyIn;
-    document.getElementById('countLateIn').innerText = stats.lateIn;
+    document.getElementById('countLateIn').innerText = onLeaveCount; // پیشاندانی ژمارەی مۆڵەتەکان
     document.getElementById('countVeryLateIn').innerText = stats.veryLateIn;
     document.getElementById('countEarlyOut').innerText = stats.earlyOut;
     document.getElementById('countOnTimeOut').innerText = stats.onTimeOut;
@@ -794,8 +791,7 @@ function handlePrint() {
             const checkIn = new Date(record.check_in_time);
             const inTime = checkIn.getHours() * 60 + checkIn.getMinutes();
             const hasExit = record.check_out_time !== null;
-            if (statusFilter === 'earlyIn') return inTime < 510;
-            if (statusFilter === 'lateIn') return inTime >= 510 && inTime <= 540;
+             if (inTime <= 540) { stats.earlyIn++; }
             if (statusFilter === 'veryLateIn') return inTime > 540;
             if (hasExit) {
                 const checkOut = new Date(record.check_out_time);
