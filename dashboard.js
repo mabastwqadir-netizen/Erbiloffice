@@ -957,7 +957,7 @@ function renderStaffCalendar(data, staffId) {
     const grid = document.createElement('div');
     grid.className = 'calendar-grid';
     
-    const dayNames = currentLang === 'ku' ? ["ش", "1ش", "2ش", "3ش", "4ش", "5ش", "هـ"] : ["س", "ح", "ن", "ث", "ر", "خ", "ج"];
+    const dayNames = currentLang === 'ku' ? ["شەممە", "1شەم", "2شەم", "3شەم", "4شەم", "5شەم", "هەینی"] : ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
     dayNames.forEach(d => {
         grid.innerHTML += `<div class="calendar-day-name" style="font-size:0.65rem;">${d}</div>`;
     });
@@ -1325,32 +1325,81 @@ function showDayDetails(record, dateStr) {
      document.getElementById('detailDate').innerText = translations[currentLang].date + " " + dateStr;
      input.value = ""; // پاککردنەوەی پێشوو
     
+    const detailIn = document.getElementById('detailIn');
+    const detailOut = document.getElementById('detailOut');
+    const leave = userLeaves.find(l => dateStr >= l.start_date && dateStr <= l.end_date);
+    const isOnLeave = !!leave;
+
+    // پاککردنەوە و شاردنەوەی سەرەتا بۆ ڕێگری لە تێکەڵبوونی داتای ڕۆژانی پێشوو
+    detailIn.style.display = 'none';
+    detailOut.style.display = 'none';
+    detailIn.innerHTML = "";
+    detailOut.innerHTML = "";
+    // پاککردنەوەی ستایلی دیفۆڵت بۆ ئەوەی دیزاینەکە وەک هی بەڕێوەبەر بێت
+    detailIn.style.background = "";
+    detailIn.style.borderRight = "";
+    detailOut.style.background = "";
+    detailOut.style.borderRight = "";
+    detailOut.style.padding = "";
+    detailOut.style.gap = "";
+    detailOut.style.flexDirection = "row"; 
+    detailOut.style.alignItems = "center";
+
     if (record) {
-        document.getElementById('detailIn').style.display = 'flex';
-        document.getElementById('detailOut').style.display = 'flex';
-        document.getElementById('detailIn').innerHTML = `<i class="fas fa-sign-in-alt" style="color: #22c55e;"></i> <div>${translations[currentLang].arrival}: <b>${formatTime12(record.check_in_time)}</b></div>`;
-        document.getElementById('detailOut').innerHTML = `<i class="fas fa-sign-out-alt" style="color: #ef4444;"></i> <div>${translations[currentLang].checkout}: <b>${record.check_out_time ? formatTime12(record.check_out_time) : translations[currentLang].notRecorded}</b></div>`;
-    } else {
-        // پشکنین ئەگەر فەرمانبەرەکە لە مۆڵەتدا بێت بۆ ئەم ڕێکەوتە
-        const leave = userLeaves.find(l => dateStr >= l.start_date && dateStr <= l.end_date);
-        if (leave) {
-            document.getElementById('detailOut').style.display = 'none';
-            document.getElementById('detailIn').style.display = 'flex';
-            document.getElementById('detailIn').innerHTML = `
-                <div class="detail-text" style="border-right: 4px solid #ffc107; background: rgba(255, 193, 7, 0.05); width: 100%; justify-content: center;">
-                    <i class="fas fa-plane-departure" style="color: #ffc107;"></i> 
-                    <div>
-                        ${translations[currentLang].reasonForLeave}: <b>${translations[currentLang][leave.reason] || leave.reason}</b>
-                        ${leave.start_time ? `<br><small style="opacity:0.7;">${formatTime12(leave.start_time)} - ${formatTime12(leave.end_time)}</small>` : ''}
-                    </div>
-                </div>`;
-        } else {
-            document.getElementById('detailOut').style.display = 'none';
-            document.getElementById('detailIn').innerHTML = `<div style="text-align: center; width: 100%; padding: 20px 0; color: var(--text-sub);">
-                <i class="fas fa-calendar-times" style="font-size: 2.5rem; display: block; margin-bottom: 10px; opacity: 0.5;"></i>
-                ${translations[currentLang].recordNotFound}
+        detailIn.style.display = 'flex';
+        detailOut.style.display = 'flex';
+
+        // جێگیرکردنی ستایلی ئامادەبوون (وەک هی بەڕێوەبەر)
+        detailIn.style.borderRight = "4px solid #22c55e";
+        detailIn.style.background = "rgba(34, 197, 94, 0.05)";
+        detailIn.innerHTML = `<i class="fas fa-sign-in-alt" style="color: #22c55e;"></i> <div>${translations[currentLang].arrival}: <b>${formatTime12(record.check_in_time)}</b></div>`;
+
+        // جێگیرکردنی ستایلی دەرچوون (وەک هی بەڕێوەبەر)
+        detailOut.style.borderRight = "4px solid #ef4444";
+        detailOut.style.background = "rgba(239, 68, 68, 0.05)";
+        detailOut.innerHTML = `<i class="fas fa-sign-out-alt" style="color: #ef4444;"></i> <div>${translations[currentLang].checkout}: <b>${record.check_out_time ? formatTime12(record.check_out_time) : translations[currentLang].notRecorded}</b></div>`;
+    }
+
+    if (isOnLeave) {
+        const leaveHtmlContent = `
+            <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+                <i class="fas fa-plane-departure" style="color: #ffc107;"></i> 
+                <div>
+                    ${translations[currentLang].reasonForLeave}: <b>${translations[currentLang][leave.reason] || leave.reason}</b>
+                    ${leave.start_time ? `<br><small style="opacity:0.7;">${formatTime12(leave.start_time)} - ${formatTime12(leave.end_time)}</small>` : ''}
+                </div>
             </div>`;
+
+        if (!record) {
+            detailIn.style.display = 'flex';
+            detailIn.style.borderRight = "4px solid #ffc107";
+            detailIn.style.background = "rgba(255, 193, 7, 0.05)";
+            detailIn.innerHTML = leaveHtmlContent;
+        } else {
+            // ئەگەر هاتن و دەرچوون و مۆڵەت پێکەوە هەبوون (مۆڵەتی کاتی)
+            const checkoutHtml = detailOut.innerHTML;
+            detailOut.style.flexDirection = "column";
+            detailOut.style.alignItems = "stretch";
+            detailOut.style.padding = "0";
+            detailOut.style.background = "none";
+            detailOut.style.border = "none";
+            detailOut.style.gap = "5px"; // جێگیرکردنی بۆشایی نێوان دوو پارچەکە ڕێک بە ٥ پیکسڵ
+
+            detailOut.innerHTML = `
+                <div class="detail-text" style="border-right: 4px solid #ef4444; background: rgba(239, 68, 68, 0.05); margin: 0 !important; display: flex; align-items: center; gap: 12px;">
+                    ${checkoutHtml}
+                </div>
+                <div class="detail-text" style="border-right: 4px solid #ffc107; background: rgba(255, 193, 7, 0.05); margin: 0 !important; display: flex; align-items: center; gap: 12px;">
+                    ${leaveHtmlContent}
+                </div>
+            `;
         }
+    } else if (!record) {
+        detailIn.style.display = 'flex';
+        detailIn.innerHTML = `<div style="text-align: center; width: 100%; padding: 20px 0; color: var(--text-sub);">
+            <i class="fas fa-calendar-times" style="font-size: 2.5rem; display: block; margin-bottom: 10px; opacity: 0.5;"></i>
+            ${translations[currentLang].recordNotFound}
+        </div>`;
     }
 
     // هێنانی ڕوونکردنەوە ئەگەر پێشتر نێردرابێت
