@@ -15,10 +15,28 @@ let selectedLeaveStartDate = null;
 let selectedLeaveEndDate = null;
 let selectedLeaveReasonInModal = null;
 
+// فەنکشنی یاریدەدەر بۆ گۆڕینی کات لە ٢٤ کاتژمێرییەوە بۆ ١٢ کاتژمێری LTR
+function formatTime12(input) {
+    if (!input) return '';
+    let h, m;
+    if (typeof input === 'string' && input.includes(':') && !input.includes('T')) {
+        const parts = input.split(':');
+        h = parseInt(parts[0]);
+        m = parts[1].substring(0, 2);
+    } else {
+        const d = new Date(input);
+        h = d.getHours();
+        m = String(d.getMinutes()).padStart(2, '0');
+    }
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `\u200E${String(h).padStart(2, '0')}:${m} ${ampm}`;
+}
+
 let currentFilters = {
     // زیادکردنی فلتەری مۆڵەت
     // leave: 'all', // ئەگەر ویستت فلتەری مۆڵەتیش زیاد بکەیت
-
+    leaveTypes: [], // لیستێک بۆ جۆرە مۆڵەتە دیاریکراوەکان
     branch: 'all',
     status: 'all'
 };
@@ -94,6 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     await loadBranches();
     await loadAttendanceData();
+    renderLeaveTypeCheckboxes(); // دروستکردنی چیک-بۆکسەکان لە کاتی بارکردن
 });
 
 async function loadBranches() {
@@ -193,7 +212,8 @@ function applyFiltersLocally() {
     const selectedDateStr = document.getElementById('datePicker').value; // "YYYY-MM-DD"
 
     let filteredStaff = staffCache.filter(emp => {
-        const isOnLeave = leavesCache.some(l => l.user_id === emp.id && l.start_date <= selectedDateStr && l.end_date >= selectedDateStr);
+        const employeeLeave = leavesCache.find(l => l.user_id === emp.id && l.start_date <= selectedDateStr && l.end_date >= selectedDateStr);
+        const isOnLeave = !!employeeLeave;
         const record = attendanceCache.find(a => a.user_id === emp.id);
         const hasJustification = justificationsCache.some(j => j.user_id === emp.id);
 
@@ -201,8 +221,10 @@ function applyFiltersLocally() {
         const matchesSearch = emp.full_name.toLowerCase().includes(searchQuery);
         if (!matchesSearch) return false;
         
-        // ئەگەر فەرمانبەرەکە لە مۆڵەتدا بوو، و فلتەرەکە "نەهاتوو" نەبوو، ئەوا نیشانی بدە
-        if (isOnLeave && statusFilter !== 'absent') return true;
+        // ٢. فلتەری جۆری مۆڵەت (Checkboxes)
+        if (currentFilters.leaveTypes.length > 0) {
+            if (!isOnLeave || !currentFilters.leaveTypes.includes(employeeLeave.reason)) return false;
+        }
 
         if (statusFilter === 'all') return true;
         
@@ -233,6 +255,79 @@ function applyFiltersLocally() {
     });
 
     renderAttendance(attendanceCache, filteredStaff);
+}
+
+// فەنکشن بۆ دروستکردنی چیک-بۆکسەکانی مۆڵەت بە شێوەیەکی داینامیکی
+function renderLeaveTypeCheckboxes() {
+    const filterGrid = document.querySelector('.filter-grid');
+    if (!filterGrid) return;
+
+    const leaveItem = document.createElement('div');
+    leaveItem.className = 'filter-item';
+    leaveItem.id = 'leaveCheckboxFilter';
+    leaveItem.style.gridColumn = 'span 2'; // پێدانی پانتایی زیاتر بۆ چیک-بۆکسەکان
+
+    const label = document.createElement('label');
+    label.innerHTML = `<i class="fas fa-plane-departure"></i> ${translations[currentLang].filterByLeave}`;
+    
+    const container = document.createElement('div');
+    container.className = 'leave-checkbox-container';
+    
+    const types = [
+        { key: 'sickLeave', text: translations[currentLang].sickLeave },
+        { key: 'maternityLeave', text: translations[currentLang].maternityLeave },
+        { key: 'longTermLeave', text: translations[currentLang].longTermLeave },
+        { key: 'regularLeave', text: translations[currentLang].regularLeave },
+        { key: 'hourlyLeave', text: translations[currentLang].hourlyLeave }
+    ];
+
+    types.forEach(t => {
+        const item = document.createElement('label');
+        item.className = 'leave-checkbox-item';
+        item.innerHTML = `
+            <input type="checkbox" value="${t.key}" onchange="toggleLeaveTypeFilter('${t.key}')">
+            <span>${t.text}</span>
+        `;
+        container.appendChild(item);
+    });
+
+    leaveItem.appendChild(label);
+    leaveItem.appendChild(container);
+    
+    // جێگیرکردنی پێش دوگمەی پرێنت
+    const actions = filterGrid.querySelector('.filter-actions');
+    if (actions) {
+        // دڵنیابوونەوە لەوەی دوگمەکان لە تەنیشت یەکن و ناچنە سەر یەک
+        actions.style.display = 'flex';
+        actions.style.flexDirection = 'row';
+        actions.style.flexWrap = 'nowrap';
+        actions.style.gap = '10px';
+        actions.style.alignItems = 'center';
+        actions.style.width = 'max-content';
+
+        filterGrid.insertBefore(leaveItem, actions);
+        
+        // زیادکردنی دوگمەی ئێکسپۆڕت ئەگەر پێشتر دروست نەکرابوو
+        if (!document.getElementById('exportExcelBtn')) {
+            const exportBtn = document.createElement('button');
+            exportBtn.id = 'exportExcelBtn';
+            exportBtn.className = 'print-btn';
+            exportBtn.style.background = '#16a34a'; // ڕەنگی سەوز بۆ ئێکسڵ
+            exportBtn.style.margin = '0'; // لابردنی هەموو مارجینەکان بۆ هاوتا بوون
+            exportBtn.innerHTML = `<i class="fas fa-file-excel"></i> ${translations[currentLang].exportExcel}`;
+            exportBtn.onclick = handleExportExcel;
+            actions.appendChild(exportBtn);
+        }
+    } else {
+        filterGrid.appendChild(leaveItem);
+    }
+}
+
+function toggleLeaveTypeFilter(key) {
+    const index = currentFilters.leaveTypes.indexOf(key);
+    if (index === -1) currentFilters.leaveTypes.push(key);
+    else currentFilters.leaveTypes.splice(index, 1);
+    applyFiltersLocally();
 }
 
 // --- Custom Dropdown Logic ---
@@ -407,14 +502,17 @@ function renderAttendance(attendance, employees) {
                 l.end_date >= selectedDateStr
             );
             const isOnLeave = !!employeeLeave;
+            const leaveTypeText = isOnLeave ? (translations[currentLang][employeeLeave.reason] || employeeLeave.reason) : "";
 
             const just = justificationsCache.find(j => j.user_id === emp.id);
             const hasJustification = !!just;
             
-            if (isOnLeave) { // ئەگەر لە مۆڵەتدا بوو
-                row.className = `attendance-item on-leave-row`;
-                employeeClassifications.push({ label: `${translations[currentLang].reasonForLeave}: ${translations[currentLang][employeeLeave.reason]}`, class: 'badge-leave', icon: 'fas fa-plane-departure' });
-            } else if (record) { // ئەگەر چێک-ئینی کردبوو
+            if (isOnLeave) {
+                row.classList.add('on-leave-row');
+                employeeClassifications.push({ label: `${translations[currentLang].reasonForLeave}: ${leaveTypeText}`, class: 'badge-leave', icon: 'fas fa-plane-departure' });
+            }
+
+            if (record) { // ئەگەر چێک-ئینی کردبوو
                 const checkIn = new Date(record.check_in_time);
                 const inTime = checkIn.getHours() * 60 + checkIn.getMinutes();
                 
@@ -444,7 +542,7 @@ function renderAttendance(attendance, employees) {
                     stats.notCheckedOut++;
                     employeeClassifications.push({ label: translations[currentLang].noExitStat, class: 'badge-warn', icon: 'fas fa-hourglass-half' });
                 }
-            } else {
+            } else if (!isOnLeave) {
                 // ئەگەر هیچ ڕیکۆردێکی نەبوو و لە مۆڵەتیشدا نەبوو، واتە نەهاتووە
                 stats.absent++;
                 employeeClassifications.push({ label: translations[currentLang].absentStat, class: 'badge-danger', icon: 'fas fa-user-slash' });
@@ -457,7 +555,27 @@ function renderAttendance(attendance, employees) {
             
             const tIn = record ? new Date(record.check_in_time).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12: true}) : '--:--';
             const tOut = record?.check_out_time ? new Date(record.check_out_time).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12: true}) : '--:--';
-            const statusLabel = isOnLeave ? `<span class="status-pill status-leave">${translations[currentLang].leaveStatus}</span>` : (record ? `<span class="status-pill status-present">${translations[currentLang].statusPresent}</span>` : `<span class="status-pill status-absent">${translations[currentLang].statusAbsent}</span>`);
+            
+            // دیاریکردنی تایتڵی ستوونی دۆخ بە شێوەیەکی وورد
+            let statusLabel = "";
+            if (isOnLeave) {
+                if (employeeLeave.reason === 'hourlyLeave') {
+                    const timeRange = `${formatTime12(employeeLeave.start_time)} - ${formatTime12(employeeLeave.end_time)}`;
+                    const hourlyBadge = `<span class="status-pill status-leave" style="cursor:pointer;" onclick="alert('${leaveTypeText}: ${timeRange}')" title="${timeRange}">${leaveTypeText}</span>`;
+                    
+                    if (record) {
+                        statusLabel = `${hourlyBadge} <span style="font-weight:800; color:var(--text-sub); font-size:0.7rem;">+</span> <span class="status-pill status-present">${translations[currentLang].statusPresent}</span>`;
+                    } else {
+                        statusLabel = hourlyBadge;
+                    }
+                } else {
+                    statusLabel = `<span class="status-pill status-leave">${leaveTypeText}</span>`;
+                }
+            } else if (record) {
+                statusLabel = `<span class="status-pill status-present">${translations[currentLang].statusPresent}</span>`;
+            } else {
+                statusLabel = `<span class="status-pill status-absent">${translations[currentLang].statusAbsent}</span>`;
+            }
             
            row.innerHTML = `
                 <div class="emp-name-col">
@@ -785,29 +903,32 @@ function handlePrint() {
 
     // فلتەرکردنی داتاکان بە هەمان شێوەی ناو داشبۆردەکە
     const filteredStaff = staffCache.filter(emp => {
-        const selectedDateStr = document.getElementById('datePicker').value;
-        const isOnLeave = leavesCache.some(l => l.user_id === emp.id && l.start_date <= selectedDateStr && l.end_date >= selectedDateStr);
+        const employeeLeave = leavesCache.find(l => l.user_id === emp.id && l.start_date <= date && l.end_date >= date);
+        const isOnLeave = !!employeeLeave;
         const record = attendanceCache.find(a => a.user_id === emp.id);
         const matchesSearch = emp.full_name.toLowerCase().includes(searchQuery);
         if (!matchesSearch) return false;
 
-        if (isOnLeave && statusFilter !== 'absent') return true;
+        // فلتەری جۆری مۆڵەت (Checkboxes)
+        if (currentFilters.leaveTypes.length > 0) {
+            if (!isOnLeave || !currentFilters.leaveTypes.includes(employeeLeave.reason)) return false;
+        }
+
         if (statusFilter === 'all') return true;
         
         if (record) {
             const checkIn = new Date(record.check_in_time);
             const inTime = checkIn.getHours() * 60 + checkIn.getMinutes();
-            const hasExit = record.check_out_time !== null;
             if (statusFilter === 'earlyIn') return inTime <= 540;
             if (statusFilter === 'lateIn') return isOnLeave;
             if (statusFilter === 'veryLateIn') return inTime > 540;
-            if (hasExit) {
+            if (record.check_out_time) {
                 const checkOut = new Date(record.check_out_time);
                 const outTime = checkOut.getHours() * 60 + checkOut.getMinutes();
                 if (statusFilter === 'earlyOut') return outTime < 870;
                 if (statusFilter === 'onTimeOut') return outTime >= 870;
             } else if (statusFilter === 'noExit') return true;
-        } else if (statusFilter === 'absent') return true;
+        } else if (statusFilter === 'absent') return !isOnLeave;
         if (statusFilter === 'justified') return justificationsCache.some(j => j.user_id === emp.id);
         return false;
     });
@@ -818,8 +939,8 @@ function handlePrint() {
     let rowsHtml = filteredStaff.map((emp, index) => {
         const record = attendanceCache.find(a => a.user_id === emp.id);
         const branchInfo = emp.branches ? `${emp.branches.branch_id} | ${emp.branches.branch_name}` : '-';
-        const tIn = record ? new Date(record.check_in_time).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12: true}) : '-';
-        const tOut = record?.check_out_time ? new Date(record.check_out_time).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12: true}) : '-';
+        const tIn = record ? formatTime12(record.check_in_time) : '-';
+        const tOut = record?.check_out_time ? formatTime12(record.check_out_time) : '-';
         
         return `
             <tr>
@@ -912,6 +1033,84 @@ function handlePrint() {
 
     printWindow.document.write(htmlContent);
     printWindow.document.close();
+}
+
+function handleExportExcel() {
+    const date = document.getElementById('datePicker').value;
+    const searchQuery = document.getElementById('nameSearch').value.toLowerCase();
+    const statusFilter = currentFilters.status;
+    const t = translations[currentLang];
+
+    // فلتەرکردنی داتاکان ڕێک بەپێی ئەوەی لە لیستەکەدا دەردەکەوێت
+    const filteredStaff = staffCache.filter(emp => {
+        const employeeLeave = leavesCache.find(l => l.user_id === emp.id && l.start_date <= date && l.end_date >= date);
+        const isOnLeave = !!employeeLeave;
+        const record = attendanceCache.find(a => a.user_id === emp.id);
+        const matchesSearch = emp.full_name.toLowerCase().includes(searchQuery);
+        if (!matchesSearch) return false;
+
+        if (currentFilters.leaveTypes.length > 0) {
+            if (!isOnLeave || !currentFilters.leaveTypes.includes(employeeLeave.reason)) return false;
+        }
+        if (statusFilter === 'all') return true;
+        if (record) {
+            const checkIn = new Date(record.check_in_time);
+            const inTime = checkIn.getHours() * 60 + checkIn.getMinutes();
+            if (statusFilter === 'earlyIn') return inTime <= 540;
+            if (statusFilter === 'lateIn') return isOnLeave;
+            if (statusFilter === 'veryLateIn') return inTime > 540;
+            if (record.check_out_time) {
+                const outTime = new Date(record.check_out_time).getHours() * 60 + new Date(record.check_out_time).getMinutes();
+                if (statusFilter === 'earlyOut') return outTime < 870;
+                if (statusFilter === 'onTimeOut') return outTime >= 870;
+            } else if (statusFilter === 'noExit') return true;
+        } else if (statusFilter === 'absent') return !isOnLeave;
+        if (statusFilter === 'justified') return justificationsCache.some(j => j.user_id === emp.id);
+        return false;
+    });
+
+    // دروستکردنی ناوەڕۆکی CSV
+    const headers = ["#", t.colName, t.colBranch, t.arrival, t.checkout, t.colStatus, t.colJust];
+    let csvContent = headers.join(",") + "\n";
+
+    filteredStaff.forEach((emp, index) => {
+        const record = attendanceCache.find(a => a.user_id === emp.id);
+        const employeeLeave = leavesCache.find(l => l.user_id === emp.id && l.start_date <= date && l.end_date >= date);
+        const branchInfo = emp.branches ? `${emp.branches.branch_id} | ${emp.branches.branch_name}` : '-';
+        
+        const tIn = record ? new Date(record.check_in_time).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12: true}).replace(/,/g, '') : '-';
+        const tOut = record?.check_out_time ? new Date(record.check_out_time).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12: true}).replace(/,/g, '') : '-';
+        
+        let statusText = "";
+        if (employeeLeave) {
+            statusText = (translations[currentLang][employeeLeave.reason] || employeeLeave.reason) + (record ? ` + ${t.statusPresent}` : "");
+        } else if (record) {
+            statusText = t.statusPresent;
+        } else {
+            statusText = t.statusAbsent;
+        }
+
+        const just = justificationsCache.find(j => j.user_id === emp.id);
+        const justText = just ? just.reason.replace(/\n/g, ' ').replace(/,/g, ';') : '-';
+
+        const row = [
+            index + 1,
+            `"${emp.full_name}"`,
+            `"${branchInfo}"`,
+            `"${tIn}"`,
+            `"${tOut}"`,
+            `"${statusText}"`,
+            `"${justText}"`
+        ];
+        csvContent += row.join(",") + "\n";
+    });
+
+    // داگرتنی فایلەکە بە بەکارهێنانی BOM بۆ پشتگیری زمانی کوردی
+    const blob = new Blob(["\ufeff", csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Attendance_Report_${date}.csv`;
+    link.click();
 }
 
 async function handleLogout() {

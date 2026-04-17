@@ -147,7 +147,7 @@ const translations = {
         maternityLeave: "مۆڵەتی دایکایەتی",
         longTermLeave: "مۆڵەتی درێژخایەن",
         regularLeave: "مۆڵەتی ئاسایی",
-        hourlyLeave: "مۆڵەتی کاتی (سەعاتی)",
+        hourlyLeave: "مۆڵەتی کاتی",
         saveLeave: "تۆمارکردنی مۆڵەت",
         deleteLeave: "سڕینەوەی مۆڵەت",
         leaveStatus: "لە مۆڵەتە",
@@ -163,7 +163,9 @@ const translations = {
         branchManagement: "بەڕێوەبردنی فەرمانبەرانی بنکە",
         selectStaff: "فەرمانبەر هەڵبژێرە",
         viewHistory: "بینینی دەوام",
-        staffAttendanceDetails: "وردەکاری دەوامی فەرمانبەر"
+        staffAttendanceDetails: "وردەکاری دەوامی فەرمانبەر",
+        filterByLeave: "فلتەر بەپێی جۆری مۆڵەت",
+        exportExcel: "ئێکسپۆڕت (Excel)"
     },
     ar: {
         title: "ERBIL OFFICE - IHEC",
@@ -311,7 +313,7 @@ const translations = {
         maternityLeave: "إجازة أمومة",
         longTermLeave: "إجازة طويلة",
         regularLeave: "إجازة اعتيادية",
-        hourlyLeave: "إجازة زمنية (ساعات)",
+        hourlyLeave: "إجازة زمنية",
         saveLeave: "حفظ الإجازة",
         deleteLeave: "حذف الإجازة",
         leaveStatus: "في إجازة",
@@ -327,7 +329,9 @@ const translations = {
         branchManagement: "إدارة موظفي المركز",
         selectStaff: "اختر الموظف",
         viewHistory: "عرض الدوام",
-        staffAttendanceDetails: "تفاصيل دوام الموظف"
+        staffAttendanceDetails: "تفاصيل دوام الموظف",
+        filterByLeave: "تصفية حسب نوع الإجازة",
+        exportExcel: "تصدير (Excel)"
     }
 };
 

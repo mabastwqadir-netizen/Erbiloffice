@@ -469,6 +469,38 @@ body {
     transition: 0.2s;
 }
 
+/* Leave Checkbox Filter Styles */
+.leave-checkbox-container {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 10px 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    min-height: 40px;
+    align-items: center;
+    margin-top: 5px;
+}
+
+.leave-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.leave-checkbox-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary);
+    margin: 0;
+    cursor: pointer;
+}
+
 .option:hover { background: var(--bg-color); color: var(--primary); }
 .option.selected { background: rgba(var(--primary-rgb), 0.1); color: var(--primary); }
 
@@ -546,7 +578,7 @@ input[type="date"]:focus::-webkit-calendar-picker-indicator {
 
 .attendance-header-row {
     display: grid;
-    grid-template-columns: 2fr 1.8fr 2fr 1fr 1.7fr 0.8fr; /* ڕێکخستنی پانتایی ستوونەکان بۆ کاتی ئاسۆیی */
+    grid-template-columns: 2fr 1.8fr 2fr 1.8fr 1.7fr 0.8fr; /* ڕێکخستنی پانتایی ستوونەکان بۆ کاتی ئاسۆیی */
     padding: 6px 12px; /* کەمکردنەوەی بەرزی سەردێڕ */
     background: linear-gradient(to left, rgba(var(--primary-rgb), 0.08), transparent);
     border-bottom: 2px solid var(--primary); /* هێڵێکی تۆختر بۆ سەردێڕ */
@@ -570,7 +602,7 @@ input[type="date"]:focus::-webkit-calendar-picker-indicator {
 
 .attendance-item {
     display: grid;
-    grid-template-columns: 2fr 1.8fr 2fr 1fr 1.7fr 0.8fr; /* هاوتاکردن لەگەڵ سەردێڕەکە */
+    grid-template-columns: 2fr 1.8fr 2fr 1.8fr 1.7fr 0.8fr; /* هاوتاکردن لەگەڵ سەردێڕەکە */
     padding: 2px 12px; /* بۆشایی کەم و هاوسەنگ بۆ سەرەوە و خوارەوە */
     border-bottom: 1.2px solid var(--border-color) !important; /* بەکارهێنانی ڕەنگی بۆردەری سیستەم بۆ دیاربوون **/
     align-items: center;
