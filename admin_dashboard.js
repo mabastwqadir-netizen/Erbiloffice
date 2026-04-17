@@ -872,10 +872,26 @@ function handlePrint() {
     // دروستکردنی ڕیزەکانی خشتەکە
     let rowsHtml = filteredStaff.map((emp, index) => {
         const record = attendanceCache.find(a => a.user_id === emp.id);
+        const employeeLeave = leavesCache.find(l => l.user_id === emp.id && l.start_date <= date && l.end_date >= date);
+        const isOnLeave = !!employeeLeave;
         const branchInfo = emp.branches ? `${emp.branches.branch_id} | ${emp.branches.branch_name}` : '-';
         const tIn = record ? formatTime12(record.check_in_time) : '-';
         const tOut = record?.check_out_time ? formatTime12(record.check_out_time) : '-';
         
+        let statusText = "";
+        if (isOnLeave) {
+            const leaveTypeText = translations[currentLang][employeeLeave.reason] || employeeLeave.reason;
+            statusText = leaveTypeText;
+            if (employeeLeave.reason === 'hourlyLeave') {
+                statusText += ` (${formatTime12(employeeLeave.start_time)} - ${formatTime12(employeeLeave.end_time)})`;
+                if (record) statusText += ` + ${t.statusPresent}`;
+            }
+        } else if (record) {
+            statusText = t.statusPresent;
+        } else {
+            statusText = t.statusAbsent;
+        }
+
         return `
             <tr>
                 <td style="font-weight: 600; color: #444;">${index + 1}</td>
@@ -883,7 +899,7 @@ function handlePrint() {
                 <td style="font-size: 11px;">${branchInfo}</td>
                 <td dir="ltr">${tIn}</td>
                 <td dir="ltr">${tOut}</td>
-                <td></td>
+                <td>${statusText}</td>
             </tr>
         `;
     }).join('');
@@ -945,10 +961,10 @@ function handlePrint() {
                         <tr>
                             <th style="width: 25px;">#</th>
                             <th style="text-align: right; padding-right: 15px; width: 30%;">${t.colName}</th>
-                            <th style="width: 15%;">${t.colBranch}</th>
-                            <th style="width: 85px;">${t.arrival}</th>
-                            <th style="width: 85px;">${t.checkout}</th>
-                            <th style="width: 110px;">${t.tebini}</th>
+                            <th style="width: 20%;">${t.colBranch}</th>
+                            <th style="width: 60px;">${t.arrival}</th>
+                            <th style="width: 60px;">${t.checkout}</th>
+                            <th style="width: 175px;">${t.colStatus}</th>
                         </tr>
                     </thead>
                     <tbody>${rowsHtml}</tbody>
