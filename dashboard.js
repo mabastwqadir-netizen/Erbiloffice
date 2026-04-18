@@ -48,9 +48,10 @@ function formatTime12(input) {
 }
 
 // فەنکشن بۆ دیاریکردنی سەرەتا و کۆتایی ڕۆژی ئێستا
-function getTodayBounds() {
-    // بەدەستهێنانی کاتی ئێستا بە کاتی عێراق (UTC+3) بۆ دیاریکردنی ڕێکەوتی دروست
-    const now = new Date();
+function getTodayBounds(referenceDate = null) {
+    // ئەگەر کاتی سێرڤەرمان هەبوو ئەوە بەکاردێنین، ئەگەر نا کاتی مۆبایل
+    const now = referenceDate ? new Date(referenceDate) : new Date();
+    
     const formatter = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Baghdad',
         year: 'numeric',
@@ -234,7 +235,10 @@ function startLiveClock() {
 
 // --- ٢. پشکنینی دۆخی ئێستای فەرمانبەر (ئایا پێشتر هاتنی کردووە؟) ---
 async function checkAttendanceStatus() {
-    const { start, end } = getTodayBounds();
+    // وەرگرتنی کاتی سێرڤەر بۆ دیاریکردنی ئەوەی "ئەمڕۆ" چ ڕێکەوتێکە
+    const { data: serverTime } = await client.rpc('get_server_time');
+    const { start, end } = getTodayBounds(serverTime);
+
     const { data, error } = await client
         .from('attendance')
         .select('*')
@@ -501,6 +505,10 @@ function isLocationSpoofed(position) {
     // ١. پشکنینی ئاڵای mocked کە لە هەندێک وێبگەڕدا هەیە
     if (position.mocked || (position.coords && position.coords.mocked)) return true;
 
+    // ٢. پشکنینی تەمەنی لۆکەیشن (Timestamp) - ئەگەر لۆکەیشنەکە لە ١٥ چرکە کۆنتر بوو، ڕەنگە فێڵ بێت
+    const locationAge = Date.now() - position.timestamp;
+    if (locationAge > 15000) return true; 
+
     // ٢. پشکنینی وردی گوماناوی (ئەگەر وردی تەنها ٠ یان ١ مەتر بوو، یان زۆر جێگیر بوو)
     if (position.coords.accuracy < 1) return true;
 
@@ -519,7 +527,11 @@ async function processCheckIn() {
     }
 
     // پشکنین بۆ ئەوەی بزانین ئایا لەم ڕۆژەدا هیچ تۆمارێکی هەیە (هاتن یان دەرچوون)
-    const { start, end } = getTodayBounds();
+    const { data: serverTime } = await client.rpc('get_server_time');
+    const checkInTime = serverTime || new Date().toISOString();
+    
+    const { start, end } = getTodayBounds(checkInTime);
+
     const { data: activeCheckIn, error: activeCheckInError } = await client
         .from('attendance')
         .select('*')
@@ -582,14 +594,14 @@ async function processCheckIn() {
     txt.innerText = translations[currentLang].waitRecord;
 
      const currentDevice = await getDeviceID();
-    let status = "on_time"; // بە شێوەی سەرەکی
+    let status = "on_time";
 
     // ١. پشکنینی ئامێر
     if (userProfile.device_id && userProfile.device_id !== currentDevice) {
         status = "invalid_device";
     }
 
-    // ٢. پشکنینی لۆکەیشن (ئەگەر بنکەکەی دیاریکرابوو)
+    // ٣. پشکنینی لۆکەیشن (ئەگەر بنکەکەی دیاریکرابوو)
     if (userProfile.branches) {
         const distance = calculateDistance(
             userPos.latitude, userPos.longitude,
@@ -601,7 +613,6 @@ async function processCheckIn() {
         }
     }
 
-    const checkInTime = new Date().toISOString();
     const { error } = await client.from('attendance').insert([{
         user_id: currentUser.id,
         portal_lat: userPos.latitude,

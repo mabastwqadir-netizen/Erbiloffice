@@ -19,19 +19,16 @@ let selectedRoleInModal = null; // بۆ هەڵگرتنی ڕۆڵی دیاریکر
 // فەنکشنی یاریدەدەر بۆ گۆڕینی کات لە ٢٤ کاتژمێرییەوە بۆ ١٢ کاتژمێری LTR
 function formatTime12(input) {
     if (!input) return '';
-    let h, m;
-    if (typeof input === 'string' && input.includes(':') && !input.includes('T')) {
-        const parts = input.split(':');
-        h = parseInt(parts[0]);
-        m = parts[1].substring(0, 2);
-    } else {
-        const d = new Date(input);
-        h = d.getHours();
-        m = String(d.getMinutes()).padStart(2, '0');
-    }
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h % 12 || 12;
-    return `\u200E${String(h).padStart(2, '0')}:${m} ${ampm}`;
+    const d = new Date(input);
+    // بەکارهێنانی Intl بۆ ناچارکردنی کاتی بەغدا
+    const options = { 
+        timeZone: 'Asia/Baghdad', 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        hour12: true 
+    };
+    const timeStr = new Intl.DateTimeFormat('en-US', options).format(d);
+    return `\u200E${timeStr}`;
 }
 
 let currentFilters = {
@@ -149,8 +146,9 @@ async function loadAttendanceData() {
         let query = adminClient
             .from('attendance')
             .select('*, profiles!inner(full_name, branch_id)')
-            .gte('check_in_time', `${date}T00:00:00`)
-            .lte('check_in_time', `${date}T23:59:59`);
+            // بەکارهێنانی Offsetی +03:00 بۆ عێراق لە ناو SQL query
+            .gte('check_in_time', `${date}T00:00:00+03:00`)
+            .lte('check_in_time', `${date}T23:59:59+03:00`);
 
         const { data, error } = await query;
 
@@ -230,8 +228,12 @@ function applyFiltersLocally() {
         if (statusFilter === 'all') return true;
         
         if (record) {
-            const checkIn = new Date(record.check_in_time);
-            const inTime = checkIn.getHours() * 60 + checkIn.getMinutes();
+            const checkInDate = new Date(record.check_in_time);
+            // دەرهێنانی کاتژمێر و خولەک بەپێی کاتی عێراق بۆ فلتەرکردن
+            const iraqHours = parseInt(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Baghdad', hour: 'numeric' }).format(checkInDate));
+            const iraqMinutes = parseInt(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Baghdad', minute: 'numeric' }).format(checkInDate));
+            const inTime = iraqHours * 60 + iraqMinutes;
+            
             const hasExit = record.check_out_time !== null;
             
             if (statusFilter === 'earlyIn') return inTime <= 540; // پێش ٩:٠٠
