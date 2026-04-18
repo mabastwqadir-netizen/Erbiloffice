@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ihec-inout-v1.3.1';
+const CACHE_NAME = 'ihec-inout-v1.3.2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -11,7 +11,12 @@ const ASSETS = [
   '/admin_dashboard.css',
   '/admin_dashboard.js',
   '/version.json',
-  '/assets/icon.png'
+  '/assets/icon.png',
+  '/assets/icon-192.png',
+  '/assets/icon-512.png',
+  '/settings.html',
+  '/settings.css',
+  '/settings.js'
   
 ];
 
