@@ -1,8 +1,6 @@
 // dashboard.js - Updated & Merged Version
-const URL_SB = 'https://mygqlubvxdbbsygitjuj.supabase.co';
-const KEY_SB = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15Z3FsdWJ2eGRiYnN5Z2l0anVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjA3NzIsImV4cCI6MjA5MTI5Njc3Mn0.bAecJcTMfZEiT1doet_PgH3EEjjAB6juNRoCJlK9qeA';
-
-const client = supabase.createClient(URL_SB, KEY_SB);
+// بەکارهێنانی کڵایێنتە گشتییەکە کە لە script.js پێناسە کراوە
+let client;
 
 let userPos = null;
 let watchID = null;
@@ -25,26 +23,6 @@ let selectedLeaveEndTime = null;
 let staffDetailModal = null; // New global variable for the staff detail modal
 let selectedLeaveEndDate = null;
 let selectedLeaveReason = null;
-
-// فەنکشنی یاریدەدەر بۆ گۆڕینی کات لە ٢٤ کاتژمێرییەوە بۆ ١٢ کاتژمێری
-function formatTime12(input) {
-    if (!input) return '';
-    let d = new Date(input);
-
-    // ئەگەر تەنها کات بوو، ڕێکەوتێکی بۆ زیاد بکە تاوەکو وەک Date بناسرێت
-    if (isNaN(d.getTime()) && typeof input === 'string') {
-        d = new Date(`2000-01-01T${input.includes('T') ? input.split('T')[1] : input}`);
-    }
-    if (isNaN(d.getTime())) return '--:--';
-
-    try {
-        const options = { timeZone: 'Asia/Baghdad', hour: '2-digit', minute: '2-digit', hour12: true };
-        const timeStr = new Intl.DateTimeFormat('en-US', options).format(d);
-        return `\u200E${timeStr}`;
-    } catch (e) {
-        return '--:--';
-    }
-}
 
 // فەنکشن بۆ دیاریکردنی سەرەتا و کۆتایی ڕۆژی ئێستا
 function getTodayBounds(referenceDate = null) {
@@ -700,6 +678,14 @@ async function processCheckOut() {
 
 // --- ٦. کاتێک لاپەڕەکە بار دەبێت ---
 document.addEventListener('DOMContentLoaded', async () => {
+    // وەرگرتنی کڵایێنتەکە لە ویندۆوە بۆ ڕێگری لە ReferenceError
+    client = window.supabaseClient || supabaseClient;
+
+    if (!client) {
+        console.error("Supabase client is not initialized.");
+        return;
+    }
+
     // پشکنینی ناسنامە - دەبێت ئەمە یەکەمین کار بێت بۆ ڕێگریکردن لە بینینی ناوەڕۆک بەبێ لۆگین
     const { data: { user }, error } = await client.auth.getUser();
     if (error || !user) {

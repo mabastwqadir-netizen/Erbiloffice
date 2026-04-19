@@ -103,7 +103,8 @@ function forceUpdateApp() {
 }
 
 // لێرە ناوی گۆڕاوەکەمان گۆڕی بۆ supabaseClient بۆ ئەوەی چیتر تووشی هەڵەی (already declared) نەبیت
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// بەکارهێنانی var یان window بۆ دڵنیابوون لەوەی گۆڕاوەکە بە جیهانی دەناسرێت
+var supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- ٢. دۆخی تاریک و ڕوون (Theme) ---
 let currentTheme = localStorage.getItem('theme') || 'light';
@@ -188,6 +189,25 @@ document.addEventListener('click', function(event) {
         dropdownContent.classList.remove('show');
     }
 });
+
+// فەنکشنی گشتی بۆ گۆڕینی کات (بۆ ئەوەی لە هەموو شوێنێک بەکاربێت)
+function formatTime12(input) {
+    if (!input) return '';
+    let d = new Date(input);
+
+    if (isNaN(d.getTime()) && typeof input === 'string') {
+        d = new Date(`2000-01-01T${input.includes('T') ? input.split('T')[1] : input}`);
+    }
+    
+    if (isNaN(d.getTime())) return '--:--';
+
+    try {
+        const options = { timeZone: 'Asia/Baghdad', hour: '2-digit', minute: '2-digit', hour12: true };
+        return `\u200E${new Intl.DateTimeFormat('en-US', options).format(d)}`;
+    } catch (e) {
+        return '--:--';
+    }
+}
 
 function togglePassword() {
     const passInput = document.getElementById('password');

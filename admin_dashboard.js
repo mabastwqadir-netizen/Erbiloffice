@@ -1,6 +1,5 @@
-const URL_SB = 'https://mygqlubvxdbbsygitjuj.supabase.co';
-const KEY_SB = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15Z3FsdWJ2eGRiYnN5Z2l0anVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjA3NzIsImV4cCI6MjA5MTI5Njc3Mn0.bAecJcTMfZEiT1doet_PgH3EEjjAB6juNRoCJlK9qeA';
-const adminClient = supabase.createClient(URL_SB, KEY_SB);
+// بەکارهێنانی کڵایێنتە گشتییەکە کە لە script.js پێناسە کراوە
+let adminClient;
 
 let attendanceCache = []; // پاشەکەوتکردنی داتا بۆ فلتەرکردنی خێرا
 let staffCache = [];      // پاشەکەوتکردنی فەرمانبەران
@@ -16,26 +15,6 @@ let selectedLeaveEndDate = null;
 let selectedLeaveReasonInModal = null;
 let selectedRoleInModal = null; // بۆ هەڵگرتنی ڕۆڵی دیاریکراو لە مۆداڵ
 
-// فەنکشنی یاریدەدەر بۆ گۆڕینی کات لە ٢٤ کاتژمێرییەوە بۆ ١٢ کاتژمێری LTR
-function formatTime12(input) {
-    if (!input) return '';
-    let d = new Date(input);
-
-    // ئەگەر داتاکە تەنها کات بوو، ڕێکەوتێکی بۆ زیاد دەکەین تاوەکو وەک Date بناسرێت
-    if (isNaN(d.getTime()) && typeof input === 'string') {
-        d = new Date(`2000-01-01T${input.includes('T') ? input.split('T')[1] : input}`);
-    }
-    
-    if (isNaN(d.getTime())) return '--:--';
-
-    try {
-        const options = { timeZone: 'Asia/Baghdad', hour: '2-digit', minute: '2-digit', hour12: true };
-        return `\u200E${new Intl.DateTimeFormat('en-US', options).format(d)}`;
-    } catch (e) {
-        return '--:--';
-    }
-}
-
 let currentFilters = {
     // زیادکردنی فلتەری مۆڵەت
     // leave: 'all', // ئەگەر ویستت فلتەری مۆڵەتیش زیاد بکەیت
@@ -45,6 +24,14 @@ let currentFilters = {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // وەرگرتنی کڵایێنتەکە لە ویندۆوە بۆ ڕێگری لە ReferenceError
+    adminClient = window.supabaseClient || supabaseClient;
+    
+    if (!adminClient) {
+        console.error("Supabase client is not initialized. Check script.js loading order.");
+        return;
+    }
+
     // ١. پشکنینی خێرای سیژن (Session) بۆ پاراستنی لاپەڕەکە پێش هەر کارێک
     const { data: { session }, error: sessionError } = await adminClient.auth.getSession();
     
