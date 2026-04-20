@@ -830,37 +830,55 @@ async function initSubAdminPanel() {
     const panel = document.createElement('div');
     panel.className = 'status-card sub-admin-panel';
     panel.style.marginTop = '20px';
+    
+    const t = translations[currentLang];
+    
     panel.innerHTML = `
-        <h4 style="margin-bottom:15px; font-size:0.9rem; color:var(--primary);">
-            <i class="fas fa-users-cog"></i> ${translations[currentLang].branchManagement}
+        <h4 class="panel-title">
+            <i class="fas fa-users-cog"></i> ${t.branchManagement}
         </h4>
         <div class="custom-select" id="staffSelectDropdown" onclick="toggleCustomDropdown(event, 'staffSelectDropdown')" style="margin-bottom:10px;">
             <div class="select-trigger">
-                <span class="selected-text">${translations[currentLang].selectStaff}...</span>
+                <span class="selected-text">${t.selectStaff}...</span>
                 <i class="fas fa-chevron-down"></i>
             </div>
             <div class="options-list" id="staffOptionsList"></div>
         </div>
-        <div id="staffActions" style="display:none; gap:10px; flex-direction:column; margin-top:10px;">
-            <button class="checkin-btn history-btn" onclick="viewSelectedStaffAttendance(this)" style="margin:0; height:38px; font-size:0.8rem;">
-                <i class="fas fa-history"></i> ${translations[currentLang].viewHistory}
+        <div id="staffActions" style="display:none; gap:12px; flex-direction:column; margin-top:10px;">
+            <button class="checkin-btn history-btn" onclick="viewSelectedStaffAttendance(this)">
+                <i class="fas fa-history"></i> <span>${t.viewHistory}</span>
             </button>
             <div id="staffCalendarWrapper" style="max-height: 0; opacity: 0; overflow: hidden; visibility: hidden; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: top;">
                 <div id="staffCalendarView" class="calendar-container" style="margin-top: 10px; border: 1px solid var(--border-color); background: var(--card-bg);"></div>
             </div>
-            <div class="justification-area" style="border:1px solid var(--border-color); padding:15px; border-radius:15px; background:var(--bg-color);">
-                <label style="font-size:0.8rem; margin-bottom:10px;"><i class="fas fa-plane-departure"></i> ${translations[currentLang].leaveManagement}</label>
-                <div class="date-range-group" style="margin-bottom:12px; display: flex; gap: 10px; width: 100%;">
-                    <input type="date" id="subLeaveStart" class="glass-input" style="height:40px; font-size:0.85rem; padding: 0 10px; flex: 1; min-width: 0;" onchange="selectedLeaveStartDate=this.value">
-                    <input type="date" id="subLeaveEnd" class="glass-input" style="height:40px; font-size:0.85rem; padding: 0 10px; flex: 1; min-width: 0;" onchange="selectedLeaveEndDate=this.value">
+            <div class="leave-management-card">
+                <label class="leave-label"><i class="fas fa-plane-departure"></i> ${t.leaveManagement}</label>
+                
+                <div class="date-range-container">
+                    <div class="input-wrapper-labeled">
+                        <label>${t.from}</label>
+                        <input type="date" id="subLeaveStart" class="glass-input" onchange="selectedLeaveStartDate=this.value">
+                    </div>
+                    <div class="input-wrapper-labeled">
+                        <label>${t.to}</label>
+                        <input type="date" id="subLeaveEnd" class="glass-input" onchange="selectedLeaveEndDate=this.value">
+                    </div>
                 </div>
-                <div id="hourlyTimeInputs" class="date-range-group" style="display:none; margin-bottom:12px; gap: 10px; width: 100%;">
-                    <input type="time" id="subLeaveStartTime" class="glass-input" style="height:40px; font-size:0.85rem; padding: 0 10px; flex: 1; min-width: 0;" onchange="selectedLeaveStartTime=this.value">
-                    <input type="time" id="subLeaveEndTime" class="glass-input" style="height:40px; font-size:0.85rem; padding: 0 10px; flex: 1; min-width: 0;" onchange="selectedLeaveEndTime=this.value">
+                
+                <div id="hourlyTimeInputs" class="date-range-container" style="display:none;">
+                    <div class="input-wrapper-labeled">
+                        <label>${t.from}</label>
+                        <input type="time" id="subLeaveStartTime" class="glass-input" onchange="selectedLeaveStartTime=this.value">
+                    </div>
+                    <div class="input-wrapper-labeled">
+                        <label>${t.to}</label>
+                        <input type="time" id="subLeaveEndTime" class="glass-input" onchange="selectedLeaveEndTime=this.value">
+                    </div>
                 </div>
+                
                 <div class="custom-select" id="subLeaveReasonSelect" onclick="toggleCustomDropdown(event, 'subLeaveReasonSelect')" style="margin-bottom:8px;">
-                    <div class="select-trigger" style="height:40px; font-size:0.85rem;">
-                        <span class="selected-text">${translations[currentLang].selectLeaveReason}</span>
+                    <div class="select-trigger" style="height:44px; font-size:0.85rem;">
+                        <span class="selected-text">${t.selectLeaveReason}</span>
                         <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="options-list">
@@ -871,8 +889,8 @@ async function initSubAdminPanel() {
                         <div class="option" onclick="selectSubLeaveReason(event, 'longTermLeave', '${translations[currentLang].longTermLeave}')">${translations[currentLang].longTermLeave}</div>
                     </div>
                 </div>
-                <button class="login-btn" onclick="saveStaffLeave()" style="padding:12px; font-size:0.9rem; margin-top:5px;">
-                    <i class="fas fa-save"></i> ${translations[currentLang].saveLeave}
+                <button class="login-btn save-leave-btn" onclick="saveStaffLeave()">
+                    <i class="fas fa-save"></i> <span>${t.saveLeave}</span>
                 </button>
             </div>
         </div>
