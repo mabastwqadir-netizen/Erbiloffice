@@ -2,6 +2,8 @@ const sbURL = 'https://mygqlubvxdbbsygitjuj.supabase.co';
 const sbKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15Z3FsdWJ2eGRiYnN5Z2l0anVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MjA3NzIsImV4cCI6MjA5MTI5Njc3Mn0.bAecJcTMfZEiT1doet_PgH3EEjjAB6juNRoCJlK9qeA';
 const supabaseClientSettings = supabase.createClient(sbURL, sbKey);
 
+let userRole = 'employee'; // بۆ دیاریکردنی جۆری داشبۆرد لە کاتی گەڕانەوە
+
 document.addEventListener('DOMContentLoaded', async () => {
     // ١. بەکارهێنانی getSession لەبری getUser بۆ ئەوەی یەکسەر و بەبێ چاوەڕوانی سێرڤەر ناوەڕۆکەکە نیشان بدات
     const { data: { session } } = await supabaseClientSettings.auth.getSession();
@@ -11,6 +13,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.replace('index.html');
         return;
     }
+
+    // هێنانی ڕۆڵی بەکارهێنەر بۆ ئەوەی بزانین بگەڕێتەوە بۆ dashboard یان admin_dashboard
+    const { data: profile } = await supabaseClientSettings
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+    if (profile) userRole = profile.role;
 
     // ٢. نیشاندانی ناوەڕۆک تەنها بۆ کەسی ڕێپێدراو
     const content = document.getElementById('settingsContent');
@@ -213,7 +223,8 @@ async function updatePassword() {
         btn.innerHTML = `<i class="fas fa-key"></i> ${translations[currentLang].changePasswordBtn}`;
     } else {
         showToast(translations[currentLang].passChangedSuccess, 'success');
-        setTimeout(() => window.location.href = 'dashboard.html', 2000);
+        // گەڕانەوە بۆ لاپەڕەی گونجاو بەپێی ڕۆڵ
+        setTimeout(() => window.location.href = userRole === 'admin' ? 'admin_dashboard.html' : 'dashboard.html', 2000);
     }
 }
 
@@ -236,6 +247,6 @@ function goBackToDashboard() {
     
     // گواستنەوە بۆ داشبۆرد دوای تەواوبوونی ئەنیمەیشنەکە
     setTimeout(() => {
-        window.location.href = 'dashboard.html';
+        window.location.href = userRole === 'admin' ? 'admin_dashboard.html' : 'dashboard.html';
     }, 450);
 }

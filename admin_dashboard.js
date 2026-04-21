@@ -1319,3 +1319,11 @@ async function handleLogout() {
     await adminClient.auth.signOut();
     location.href = 'index.html';
 }
+
+function navigateToSettings() {
+    // زیادکردنی ئەنیمەیشنی سڵاید بۆ لای چەپ هاوشێوەی داشبۆردی فەرمانبەر
+    document.body.classList.add('page-slide-left');
+    setTimeout(() => {
+        window.location.href = 'settings.html';
+    }, 150); 
+}
