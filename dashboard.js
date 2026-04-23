@@ -1012,7 +1012,8 @@ function renderStaffCalendar(data, staffId) {
     for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const record = data.find(r => r.check_in_time.startsWith(dateStr));
-        const isOnLeave = staffLeaveData.some(l => dateStr >= l.start_date && dateStr <= l.end_date);
+        const leave = staffLeaveData.find(l => dateStr >= l.start_date && dateStr <= l.end_date);
+        const isOnLeave = !!leave;
         const dayDate = new Date(year, month, d);
         const dayOfWeek = dayDate.getDay();
         const isWeekend = (dayOfWeek === 5 || dayOfWeek === 6);
@@ -1021,7 +1022,11 @@ function renderStaffCalendar(data, staffId) {
         let className = "calendar-day";
         if (isWeekend) className += " weekend-default-day";
         if (record) className += " has-record";
-        else if (isOnLeave) className += " calendar-leave";
+        else if (isOnLeave) {
+            if (leave.reason === 'workshop') className += " calendar-workshop";
+            else if (leave.reason === 'mobileTeam') className += " calendar-mobile-team";
+            else className += " calendar-leave";
+        }
         else if (isPastDay && !isWeekend) className += " missed-day";
         if (today.toDateString() === dayDate.toDateString()) className += " today";
         
@@ -1333,7 +1338,8 @@ function renderCalendar() {
     for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const record = attendanceData.find(r => r.check_in_time.startsWith(dateStr));
-        const isOnLeave = userLeaves.some(l => dateStr >= l.start_date && dateStr <= l.end_date);
+        const leave = userLeaves.find(l => dateStr >= l.start_date && dateStr <= l.end_date);
+        const isOnLeave = !!leave;
         const dayDate = new Date(year, month, day);
         const dayOfWeek = dayDate.getDay(); // 0=Sun, 5=Fri, 6=Sat
         const isWeekend = (dayOfWeek === 5 || dayOfWeek === 6); // 5 for Friday, 6 for Saturday
@@ -1348,7 +1354,9 @@ function renderCalendar() {
         if (record) {
             className += " has-record";
         } else if (isOnLeave) {
-            className += " calendar-leave";
+            if (leave.reason === 'workshop') className += " calendar-workshop";
+            else if (leave.reason === 'mobileTeam') className += " calendar-mobile-team";
+            else className += " calendar-leave";
         } else if (isPastDay && !isWeekend) {
             // تەنها ڕۆژانی ڕابردووی نا-پشوو کە تۆماریان نییە بە سوور دیاری دەکرێن
             className += " missed-day";
@@ -1408,6 +1416,20 @@ function showDayDetails(record, dateStr) {
     }
 
     if (isOnLeave) {
+        let leaveColor = "#ffc107";
+        let leaveBg = "rgba(255, 193, 7, 0.05)";
+        let leaveIcon = "fas fa-plane-departure";
+        
+        if (leave.reason === 'mobileTeam') {
+            leaveColor = "#14b8a6";
+            leaveBg = "rgba(20, 184, 166, 0.05)";
+            leaveIcon = "fas fa-car-side";
+        } else if (leave.reason === 'workshop') {
+            leaveColor = "#6366f1";
+            leaveBg = "rgba(99, 102, 241, 0.15)";
+            leaveIcon = "fas fa-tools";
+        }
+
         const leaveHtmlContent = `
             <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
                 <i class="${leaveIcon}" style="color: ${leaveColor};"></i> 
