@@ -700,12 +700,12 @@ async function openEmployeeSettings(userId) {
     // ئامادەکردنی لیستی جۆرەکانی مۆڵەت بۆ ناو مۆداڵ
     const leaveTypes = [
         { key: 'hourlyLeave', text: translations[currentLang].hourlyLeave },
-        { key: 'mobileTeam', text: translations[currentLang].mobileTeam },
-        { key: 'workshop', text: translations[currentLang].workshop },
         { key: 'regularLeave', text: translations[currentLang].regularLeave },
         { key: 'sickLeave', text: translations[currentLang].sickLeave },
         { key: 'maternityLeave', text: translations[currentLang].maternityLeave },
-        { key: 'longTermLeave', text: translations[currentLang].longTermLeave }
+        { key: 'longTermLeave', text: translations[currentLang].longTermLeave },
+         { key: 'mobileTeam', text: translations[currentLang].mobileTeam },
+        { key: 'workshop', text: translations[currentLang].workshop }
     ];
 
     const leaveOptionsHtml = leaveTypes.map(l => `

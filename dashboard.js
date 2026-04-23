@@ -883,12 +883,12 @@ async function initSubAdminPanel() {
                     </div>
                     <div class="options-list">
                         <div class="option" onclick="selectSubLeaveReason(event, 'hourlyLeave', '${translations[currentLang].hourlyLeave}')">${translations[currentLang].hourlyLeave}</div>
-                        <div class="option" onclick="selectSubLeaveReason(event, 'mobileTeam', '${translations[currentLang].mobileTeam}')">${translations[currentLang].mobileTeam}</div>
-                        <div class="option" onclick="selectSubLeaveReason(event, 'workshop', '${translations[currentLang].workshop}')">${translations[currentLang].workshop}</div>
                         <div class="option" onclick="selectSubLeaveReason(event, 'regularLeave', '${translations[currentLang].regularLeave}')">${translations[currentLang].regularLeave}</div>
                         <div class="option" onclick="selectSubLeaveReason(event, 'sickLeave', '${translations[currentLang].sickLeave}')">${translations[currentLang].sickLeave}</div>
                         <div class="option" onclick="selectSubLeaveReason(event, 'maternityLeave', '${translations[currentLang].maternityLeave}')">${translations[currentLang].maternityLeave}</div>
                         <div class="option" onclick="selectSubLeaveReason(event, 'longTermLeave', '${translations[currentLang].longTermLeave}')">${translations[currentLang].longTermLeave}</div>
+                        <div class="option" onclick="selectSubLeaveReason(event, 'mobileTeam', '${translations[currentLang].mobileTeam}')">${translations[currentLang].mobileTeam}</div>
+                        <div class="option" onclick="selectSubLeaveReason(event, 'workshop', '${translations[currentLang].workshop}')">${translations[currentLang].workshop}</div>
                     </div>
                 </div>
                 <button class="login-btn save-leave-btn" onclick="saveStaffLeave()">
