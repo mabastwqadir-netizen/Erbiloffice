@@ -527,6 +527,7 @@ function renderAttendance(attendance, employees) {
 
             const just = justificationsCache.find(j => j.user_id === emp.id);
             const hasJustification = !!just;
+            const hasDevice = !!emp.device_id;
             
             if (isOnLeave) {
                 if (employeeLeave.reason === 'mobileTeam') {
@@ -646,6 +647,9 @@ function renderAttendance(attendance, employees) {
                     `).join('')}
                 </div>
                 <div class="just-col">
+                    <div class="device-icon-wrapper ${hasDevice ? 'active' : ''}" title="${hasDevice ? translations[currentLang].verified : translations[currentLang].unverified}">
+                        <i class="fas ${hasDevice ? 'fa-mobile-alt' : 'fa-mobile-slash'}"></i>
+                    </div>
                     <div class="just-icon-wrapper ${hasJustification ? 'active' : ''}" onclick="viewDetails('${emp.id}')" title="${hasJustification ? just.reason : translations[currentLang].recordNotFound}">
                         <i class="fas fa-file-signature"></i>
                     </div>

@@ -91,12 +91,14 @@ function forceUpdateApp() {
     const lang = localStorage.getItem('lang');
     const theme = localStorage.getItem('theme');
     const deviceID = localStorage.getItem('device_id');
+    const uniqueSeed = localStorage.getItem('ihec_unique_seed');
 
     localStorage.clear();
 
     if (lang) localStorage.setItem('lang', lang);
     if (theme) localStorage.setItem('theme', theme);
     if (deviceID) localStorage.setItem('device_id', deviceID);
+    if (uniqueSeed) localStorage.setItem('ihec_unique_seed', uniqueSeed);
     localStorage.setItem('app_version', newVersion);
 
     window.location.reload(true);

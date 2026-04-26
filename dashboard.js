@@ -854,7 +854,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         let deviceMsgLong = "";
 
         if (deviceOwner) {
-            if (deviceOwner.id === user.id) {
+            // ئەگەر ئامێرەکە پێشتر لای ئەم کەسە بووە، یان کۆدەکە وەشانێکی کۆنترە بەڵام هەر هی ئەمە
+            if (deviceOwner.id === user.id || profile.device_id === hardwareFP) {
                 isDeviceVerified = true;
             } else {
                 // حاڵەتی یەکەم: ئامێرەکە پێشتر لای کەسێکی تر تۆمار کراوە
@@ -863,9 +864,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 deviceMsgLong = translations[currentLang].deviceTaken;
             }
         } else {
-            if (!profile.device_id || profile.device_id.length < 10) {
-                // تۆمارکردنی ئامێری نوێ
-                // لێرە کێشە هەبوو: پێویستە currentDev بنێردرێت نەک تەنها hardwareFP
+            // ئەگەر هیچ ئایدییەک نەبوو، یان ئایدییەکە بە شێوازە کۆنەکە بوو (بێ ihec-)
+            if (!profile.device_id || !profile.device_id.startsWith('ihec-')) {
+                // ئەپدەیتکردن یان تۆمارکردنی ئامێر بۆ وەشانی نوێی جێگیر
                 const { error: regError } = await client.from('profiles').update({ device_id: currentDev }).eq('id', user.id);
                 if (regError) {
                     console.error("Failed to register device:", regError);
