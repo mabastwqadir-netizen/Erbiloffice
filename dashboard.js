@@ -79,13 +79,23 @@ async function getAudioFingerprint() {
         } catch (e) { clearTimeout(timeout); resolve('audio-err'); }
     });
 }
-
 // --- دروستکردنی پەنجەمۆری ڕەقەکاڵا (Hardware Fingerprint) ---
 async function getHardwareFingerprint() {
     let audioHash = 'no-audio';
     try {
         audioHash = await getAudioFingerprint();
     } catch (e) { console.warn("Audio hash skipped"); }
+
+    // زانیاری ووردتر لەسەر GPU و ڕێندەرەر بۆ جیاکاری زیاتر
+    let webGLInfo = 'no-webgl';
+    try {
+        const canvasGL = document.createElement('canvas');
+        const gl = canvasGL.getContext('webgl') || canvasGL.getContext('experimental-webgl');
+        if (gl) {
+            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            webGLInfo = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'no-debug';
+        }
+    } catch (e) { webGLInfo = 'webgl-err'; }
 
     // ١. دروستکردنی وێنەیەکی شووشەیی (Canvas)
     // تێبینی: لە ئایفۆن (Safari) پشکنینی پیکسڵەکان جێگیر نییە و ژاوەژاو (Noise) دروست دەکات
@@ -109,6 +119,7 @@ async function getHardwareFingerprint() {
         navigator.language,
         screen.colorDepth,
         window.devicePixelRatio || 1,
+        webGLInfo, // زانیاری گرافیک کارد
         navigator.hardwareConcurrency || '8',
         screenStable,
         uaClean,
@@ -125,16 +136,29 @@ async function getHardwareFingerprint() {
     
     return 'hw-' + Math.abs(hash).toString(36);
 }
-
 // --- بەڕێوەبردنی ئایدی ئامێر (Smart Device Manager) ---
 async function getDeviceID() {
     try {
-        const fingerprint = await getHardwareFingerprint();
-        localStorage.setItem('device_id', fingerprint);
-        return fingerprint;
+        // ١. پشکنین بکە ئایا پێشتر کۆدێکی تایبەت بۆ ئەم ئامێرە دروستکراوە؟
+        let persistentSeed = localStorage.getItem('ihec_unique_seed');
+        
+        if (!persistentSeed) {
+            // ئەگەر یەکەم جارە ئەپەکە دەکرێتەوە، کۆدێکی هەرەمەکی زۆر درێژ دروست بکە
+            persistentSeed = Math.random().toString(36).substring(2, 15) + 
+                             Math.random().toString(36).substring(2, 15) + 
+                             Date.now().toString(36);
+            localStorage.setItem('ihec_unique_seed', persistentSeed);
+        }
+
+        const hardwareFP = await getHardwareFingerprint();
+        
+        // ٢. تێکەڵکردنی پەنجەمۆری ڕەقەکاڵا لەگەڵ کۆدە تایبەتەکە
+        const finalID = hardwareFP + '-' + persistentSeed;
+        localStorage.setItem('device_id', finalID);
+        return finalID;
     } catch (e) {
         console.error("Storage error:", e);
-        return await getHardwareFingerprint(); // گەڕاندنەوەی فینگەرپرێنت تەنانەت ئەگەر ستۆرێجیش کاری نەکرد
+        return await getHardwareFingerprint(); 
     }
 }
 
