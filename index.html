@@ -59,6 +59,10 @@
             </div>
         </div>
 
+        <div class="forgot-container">
+            <a href="javascript:void(0)" class="forgot-link" onclick="openForgotModal()" data-i18n="forgotPass">تێپەڕەوشەم بیرچووە؟</a>
+        </div>
+
         <button class="login-btn" id="loginBtn" onclick="handleLogin()">
             <span id="btnText" data-i18n="loginBtnText">چوونە ژوورەوە</span>
             <div class="spinner" id="loader"></div>
@@ -72,6 +76,96 @@
         </div>
         <div class="copyright-text">
             <i class="far fa-copyright"></i> <span class="current-year"></span> <span data-i18n="copyrightText">هەموو مافێك پارێزراوە بۆ ئۆفیسی پارێزگای هەولێر</span>
+        </div>
+    </div>
+
+    <!-- Multi-Step Forgot Password Modal -->
+    <div id="forgotModal" class="modal-overlay">
+        <div class="modal-window update-card forgot-modal-width">
+            <div class="update-header forgot-header">
+                <div class="update-icon-wrapper">
+                    <i id="forgotIcon" class="fas fa-key"></i>
+                </div>
+            </div>
+            <div class="update-body">
+                <h3 id="forgotTitle" data-i18n="resetPass">ڕیسێتکردنی تێپەڕەوشە</h3>
+                
+                <!-- Step 1: Email Input -->
+                <div id="forgotStep1" class="forgot-step active">
+                    <p data-i18n="enterEmail" style="margin-bottom:15px;">ئیمەیڵەکەت بنووسە</p>
+                    <input type="email" id="forgotEmail" class="glass-input" placeholder="example@ihec.com" dir="ltr">
+                    <div id="emailError" class="error-msg-small" style="display:none; color:#ef4444; font-size:0.75rem; margin-top:8px; text-align:center;"></div>
+                    <button id="sendCodeBtn" class="login-btn" style="margin-top:20px;" onclick="handleForgotEmail()">
+                        <span class="btn-text" data-i18n="sendCode">ناردنی کۆد</span>
+                        <div class="spinner-small" style="display:none;"></div>
+                    </button>
+                </div>
+
+                <!-- Step 2: OTP Input -->
+                <div id="forgotStep2" class="forgot-step">
+                    <p data-i18n="enterOTP" style="margin-bottom:5px;">کۆدی نێردراو بنووسە</p>
+                    <div class="timer-box" style="margin-bottom:15px;">
+                        <span data-i18n="codeExpires" style="font-size:0.7rem; color:var(--text-sub);">کۆدەکە بەسەردەچێت لە:</span>
+                        <span id="forgotTimer" style="font-weight:bold; color:var(--primary); font-family:monospace;">02:00</span>
+                    </div>
+                    <input type="text" id="forgotOTP" class="glass-input" placeholder="000000" maxlength="6" style="text-align:center; letter-spacing:5px; font-size:1.4rem; font-weight:bold;" dir="ltr">
+                    <div id="otpError" class="error-msg-small" style="display:none; color:#ef4444; font-size:0.75rem; margin-top:8px; text-align:center;"></div>
+                    <button id="verifyCodeBtn" class="login-btn" style="margin-top:20px;" onclick="handleVerifyOTP()">
+                        <span class="btn-text" data-i18n="verifyCode">پشکنینی کۆد</span>
+                        <div class="spinner-small" style="display:none;"></div>
+                    </button>
+                </div>
+
+                <!-- Step 3: New Password Input -->
+                <div id="forgotStep3" class="forgot-step">
+                    <div class="input-group" style="text-align:right;">
+                        <label data-i18n="newPass">تێپەڕەوشەی نوێ</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="forgotNewPass" class="glass-input" placeholder="••••••••">
+                            <i class="fas fa-lock input-icon"></i>
+                            <span class="eye-icon" onclick="toggleForgotPassVisibility('forgotNewPass')" role="button" aria-label="Toggle Password Visibility">
+                                <i class="fas fa-eye"></i>
+                            </span>
+                        </div>
+                        <div class="strength-meter" id="forgotStrengthBarContainer">
+                            <div class="bar" id="forgotStrengthBar"></div>
+                        </div>
+                        <div class="strength-label" id="forgotStrengthText"></div>
+                    </div>
+                    <div class="input-group" style="text-align:right; margin-top:10px;">
+                        <label data-i18n="confirmPass">دووپاتکردنەوە</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="forgotConfirmPass" class="glass-input" placeholder="••••••••">
+                            <i class="fas fa-check-double input-icon"></i>
+                            <span class="eye-icon" onclick="toggleForgotPassVisibility('forgotConfirmPass')" role="button" aria-label="Toggle Password Visibility">
+                                <i class="fas fa-eye"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <!-- ئەم بەشەی خوارەوە بۆ نیشاندانی هاوتا بوونی پاسوۆردەکان پێویستە -->
+                    <div id="forgotMatchFeedback" class="match-feedback">
+                        <i class="fas"></i> <span></span>
+                    </div>
+                    <div id="passMatchError" class="error-msg-small" style="display:none; color:#ef4444; font-size:0.75rem; margin-top:8px; text-align:center;"></div>
+                    <button id="resetPassBtn" class="login-btn" style="margin-top:20px;" onclick="handleResetPassword()">
+                        <span class="btn-text" data-i18n="updatePass">نوێکردنەوەی پاسوۆرد</span>
+                        <div class="spinner-small" style="display:none;"></div>
+                    </button>
+                </div>
+
+                <!-- Step 4: Success Message -->
+                <div id="forgotStep4" class="forgot-step">
+                    <div class="success-checkmark">
+                        <i class="fas fa-check-circle" style="font-size:3rem; color:#22c55e;"></i>
+                    </div>
+                    <p data-i18n="passSuccess" style="margin:15px 0;">پاسوۆردەکەت بە سەرکەوتوویی گۆڕدرا!</p>
+                    <button class="login-btn" onclick="closeForgotModal()">
+                        <span data-i18n="close">داخستن</span>
+                    </button>
+                </div>
+
+                <button class="modal-close-link mini-close" onclick="closeForgotModal()" style="margin-top:20px; border:none; background:none; cursor:pointer; color:var(--text-sub);" data-i18n="close">داخستن</button>
+            </div>
         </div>
     </div>
 

@@ -289,3 +289,300 @@ async function handleLogin() {
         btnText.innerText = translations[currentLang].loginBtnText;
     }
 }
+
+let forgotPassStrength = 0; // Global variable to track password strength
+
+// --- Forgot Password Multi-Step Logic ---
+let forgotTimerInterval = null;
+let otpExpired = false;
+
+function openForgotModal() {
+    switchForgotStep(1);
+    otpExpired = false;
+    if (forgotTimerInterval) clearInterval(forgotTimerInterval);
+    document.getElementById('forgotModal').style.display = 'flex';
+}
+
+function closeForgotModal() {
+    document.getElementById('forgotModal').style.display = 'none';
+}
+
+function switchForgotStep(step) {
+    document.querySelectorAll('.forgot-step').forEach(s => s.classList.remove('active'));
+    document.getElementById(`forgotStep${step}`).classList.add('active');
+    
+    // گۆڕینی ئایکۆن بەپێی هەنگاو
+    const icon = document.getElementById('forgotIcon');
+    if (step === 1) icon.className = 'fas fa-envelope';
+    else if (step === 2) icon.className = 'fas fa-shield-alt';
+    else if (step === 3) {
+        icon.className = 'fas fa-lock-open';
+        // ئامادەکردنی گوێگرەکان (Listeners) کاتێک دەچێتە هەنگاوی سێیەم
+        document.getElementById('forgotNewPass').onkeyup = checkForgotPasswordStrength;
+        document.getElementById('forgotConfirmPass').onkeyup = checkForgotPassMatch;
+        checkForgotPassMatch(); // دەستپێکردنی سەرەتایی
+    }
+    else if (step === 4) icon.className = 'fas fa-check-circle';
+}
+
+function startForgotTimer() {
+    let timeLeft = 120; // 2 minutes
+    otpExpired = false;
+    const timerDisplay = document.getElementById('forgotTimer');
+    const verifyBtn = document.getElementById('verifyCodeBtn');
+    
+    if (forgotTimerInterval) clearInterval(forgotTimerInterval);
+    
+    forgotTimerInterval = setInterval(() => {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (timeLeft <= 0) {
+            clearInterval(forgotTimerInterval);
+            otpExpired = true;
+            document.getElementById('otpError').innerText = translations[currentLang].timeExpired;
+            document.getElementById('otpError').style.display = 'block';
+            verifyBtn.querySelector('.btn-text').innerText = translations[currentLang].resendCode;
+        }
+        timeLeft--;
+    }, 1000);
+}
+
+async function handleForgotEmail() {
+    const email = document.getElementById('forgotEmail').value;
+    const btn = document.getElementById('sendCodeBtn');
+    const errorEl = document.getElementById('emailError');
+
+    if (!email || !email.includes('@')) {
+        errorEl.innerText = translations[currentLang].errorEmpty;
+        errorEl.style.display = 'block';
+        return;
+    }
+
+    errorEl.style.display = 'none';
+    btn.disabled = true;
+    btn.querySelector('.btn-text').style.display = 'none';
+    btn.querySelector('.spinner-small').style.display = 'block';
+
+    // پشکنینی ئەوەی ئایا ئیمەیڵەکە لە سیستمدا هەیە
+    const { data: profile } = await supabaseClient
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+    if (!profile) {
+        errorEl.innerText = translations[currentLang].emailNotFound;
+        errorEl.style.display = 'block';
+        btn.disabled = false;
+        btn.querySelector('.btn-text').style.display = 'block';
+        btn.querySelector('.spinner-small').style.display = 'none';
+        return;
+    }
+
+    // ناردنی کۆدی ڕیسێت لە ڕێگەی سوپابەیسەوە
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+    
+    btn.disabled = false;
+    btn.querySelector('.btn-text').style.display = 'block';
+    btn.querySelector('.spinner-small').style.display = 'none';
+
+    if (error) {
+        if (error.status === 429) {
+            errorEl.innerText = translations[currentLang].rateLimitError;
+        } else {
+            errorEl.innerText = error.message;
+        }
+        errorEl.style.display = 'block';
+    } else {
+        switchForgotStep(2);
+        startForgotTimer();
+    }
+}
+
+async function handleVerifyOTP() {
+    if (otpExpired) {
+        switchForgotStep(1);
+        return;
+    }
+
+    const email = document.getElementById('forgotEmail').value;
+    const token = document.getElementById('forgotOTP').value;
+    const errorEl = document.getElementById('otpError');
+    const btn = document.getElementById('verifyCodeBtn');
+
+    if (!token || token.length < 6) {
+        errorEl.innerText = translations[currentLang].invalidOTP;
+        errorEl.style.display = 'block';
+        return;
+    }
+
+    errorEl.style.display = 'none';
+    btn.disabled = true;
+    btn.querySelector('.btn-text').style.display = 'none';
+    btn.querySelector('.spinner-small').style.display = 'block';
+
+    // پشکنینی کۆدەکە لە سوپابەیس
+    const { error } = await supabaseClient.auth.verifyOtp({
+        email,
+        token,
+        type: 'recovery'
+    });
+
+    btn.disabled = false;
+    btn.querySelector('.btn-text').style.display = 'block';
+    btn.querySelector('.spinner-small').style.display = 'none';
+
+    if (error) {
+        errorEl.innerText = translations[currentLang].invalidOTP;
+        errorEl.style.display = 'block';
+    } else {
+        if (forgotTimerInterval) clearInterval(forgotTimerInterval);
+        errorEl.style.display = 'none';
+        switchForgotStep(3);
+    }
+}
+
+function toggleForgotPassVisibility(id) {
+    const input = document.getElementById(id);
+    const icon = input.parentElement.querySelector('.eye-icon i');
+    if (input && icon) {
+        icon.classList.add('eye-icon-anim');
+        setTimeout(() => icon.classList.remove('eye-icon-anim'), 300);
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.className = 'fas fa-eye-slash active';
+        } else {
+            input.type = 'password';
+            icon.className = 'fas fa-eye';
+        }
+    }
+}
+
+function checkForgotPasswordStrength() {
+    const pass = document.getElementById('forgotNewPass').value;
+    const bar = document.getElementById('forgotStrengthBar');
+    const label = document.getElementById('forgotStrengthText');
+    const meterContainer = document.getElementById('forgotStrengthBarContainer');
+    const t = translations[currentLang];
+
+    if (pass.length === 0) {
+        meterContainer.style.display = 'none';
+        label.style.display = 'none';
+        bar.style.width = '0%'; // Reset bar width
+        label.innerText = ''; // Clear text
+        forgotPassStrength = 0;
+        checkForgotPassMatch(); // Also check match when strength changes
+        return;
+    }
+
+    meterContainer.style.display = 'block';
+    label.style.display = 'inline-flex';
+
+    let strength = 0;
+    if (pass.length >= 8) strength += 25;
+    if (/[A-Z]/.test(pass)) strength += 25;
+    if (/[0-9]/.test(pass)) strength += 25;
+    if (/[^A-Za-z0-9]/.test(pass)) strength += 25;
+
+    forgotPassStrength = strength; // Update global strength variable
+
+    bar.style.width = strength + '%';
+    bar.className = 'bar'; // Reset classes
+    label.className = 'strength-label'; // Reset classes
+
+    if (strength <= 25) {
+        bar.classList.add('weak');
+        label.classList.add('weak');
+        label.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+        label.innerText = t.weak;
+    } else if (strength <= 50) {
+        bar.classList.add('medium');
+        label.classList.add('medium');
+        label.style.backgroundColor = 'rgba(245, 158, 11, 0.1)';
+        label.innerText = t.medium;
+    } else if (strength <= 75) {
+        bar.classList.add('strong');
+        label.classList.add('strong');
+        label.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
+        label.innerText = t.strong;
+    } else {
+        bar.classList.add('very-strong');
+        label.classList.add('very-strong');
+        label.style.backgroundColor = 'rgba(14, 165, 233, 0.1)';
+        label.innerText = t.veryStrong;
+    }
+    checkForgotPassMatch(); // Call match check after strength is updated
+}
+
+function checkForgotPassMatch() {
+    const newPass = document.getElementById('forgotNewPass');
+    const confirmPass = document.getElementById('forgotConfirmPass');
+    const feedback = document.getElementById('forgotMatchFeedback');
+    const resetBtn = document.getElementById('resetPassBtn');
+    const t = translations[currentLang];
+
+    if (!confirmPass.value) {
+        feedback.style.display = 'none';
+    } else {
+        feedback.style.display = 'flex';
+        if (newPass.value === confirmPass.value && newPass.value.length >= 6) {
+            feedback.className = 'match-feedback match-success';
+            feedback.querySelector('span').innerText = t.passMatch;
+            feedback.querySelector('i').className = 'fas fa-check-circle';
+        } else {
+            feedback.className = 'match-feedback match-error';
+            feedback.querySelector('span').innerText = t.passNotMatch;
+            feedback.querySelector('i').className = 'fas fa-times-circle';
+        }
+    }
+
+    // دوگمەکە هەمیشە بە کراوەیی دەمێنێتەوە وەک داوات کردبوو
+    resetBtn.disabled = false;
+}
+
+async function handleResetPassword() {
+    const newPass = document.getElementById('forgotNewPass').value;
+    const confirmPass = document.getElementById('forgotConfirmPass').value;
+    const errorEl = document.getElementById('passMatchError');
+    const btn = document.getElementById('resetPassBtn');
+
+    if (newPass.length < 6) {
+        errorEl.innerText = "Password must be at least 6 characters";
+        errorEl.style.display = 'block';
+        return;
+    }
+
+    if (newPass !== confirmPass) {
+        errorEl.innerText = translations[currentLang].passNotMatch;
+        errorEl.style.display = 'block';
+        return;
+    }
+
+    errorEl.style.display = 'none';
+    btn.disabled = true;
+    btn.querySelector('.btn-text').style.display = 'none';
+    btn.querySelector('.spinner-small').style.display = 'block';
+
+    // نوێکردنەوەی پاسوۆردی بەکارهێنەر
+    const { error } = await supabaseClient.auth.updateUser({
+        password: newPass
+    });
+
+    btn.disabled = false;
+    btn.querySelector('.btn-text').style.display = 'block';
+    btn.querySelector('.spinner-small').style.display = 'none';
+
+    if (error) {
+        errorEl.innerText = error.message;
+        errorEl.style.display = 'block';
+    } else {
+        errorEl.style.display = 'none';
+        switchForgotStep(4);
+        
+        // دوای گۆڕینی پاسوۆرد، بەکارهێنەر دەردەکەین بۆ ئەوەی دووبارە لۆگین بێتەوە بە سەلامەتی
+        await supabaseClient.auth.signOut();
+    }
+}
