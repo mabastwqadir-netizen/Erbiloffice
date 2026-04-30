@@ -1360,7 +1360,7 @@ function handlePrint() {
                             <th style="text-align: right; padding-right: 15px; width: 30%;">${t.colName}</th>
                             <th style="width: 20%;">${t.colBranch}</th>
                             <th style="width: 60px;">${t.arrival}</th>
-                            <th style="width: 60px;">${t.checkout}</th>
+                            <th style="width: 60px;">${t.yourCheckOutt}</th>
                             <th style="width: 175px;">${t.colStatus}</th>
                         </tr>
                     </thead>

@@ -92,33 +92,33 @@
                 
                 <!-- Step 1: Email Input -->
                 <div id="forgotStep1" class="forgot-step active">
-                    <p data-i18n="enterEmail" style="margin-bottom:15px;">ئیمەیڵەکەت بنووسە</p>
+                    <p data-i18n="enterEmail" class="forgot-desc">ئیمەیڵەکەت بنووسە</p>
                     <input type="email" id="forgotEmail" class="glass-input" placeholder="example@ihec.com" dir="ltr">
-                    <div id="emailError" class="error-msg-small" style="display:none; color:#ef4444; font-size:0.75rem; margin-top:8px; text-align:center;"></div>
-                    <button id="sendCodeBtn" class="login-btn" style="margin-top:20px;" onclick="handleForgotEmail()">
+                    <div id="emailError" class="error-msg-small"></div>
+                    <button id="sendCodeBtn" class="login-btn mt-20" onclick="handleForgotEmail()">
                         <span class="btn-text" data-i18n="sendCode">ناردنی کۆد</span>
-                        <div class="spinner-small" style="display:none;"></div>
+                        <div class="spinner-small"></div>
                     </button>
                 </div>
 
                 <!-- Step 2: OTP Input -->
                 <div id="forgotStep2" class="forgot-step">
-                    <p data-i18n="enterOTP" style="margin-bottom:5px;">کۆدی نێردراو بنووسە</p>
-                    <div class="timer-box" style="margin-bottom:15px;">
-                        <span data-i18n="codeExpires" style="font-size:0.7rem; color:var(--text-sub);">کۆدەکە بەسەردەچێت لە:</span>
-                        <span id="forgotTimer" style="font-weight:bold; color:var(--primary); font-family:monospace;">02:00</span>
+                    <p data-i18n="enterOTP" class="mb-5">کۆدی نێردراو بنووسە</p>
+                    <div class="timer-box">
+                        <span data-i18n="codeExpires" class="otp-expiry-text">کۆدەکە بەسەردەچێت لە:</span>
+                        <span id="forgotTimer" class="otp-timer">02:00</span>
                     </div>
-                    <input type="text" id="forgotOTP" class="glass-input" placeholder="000000" maxlength="6" style="text-align:center; letter-spacing:5px; font-size:1.4rem; font-weight:bold;" dir="ltr">
-                    <div id="otpError" class="error-msg-small" style="display:none; color:#ef4444; font-size:0.75rem; margin-top:8px; text-align:center;"></div>
-                    <button id="verifyCodeBtn" class="login-btn" style="margin-top:20px;" onclick="handleVerifyOTP()">
+                    <input type="text" id="forgotOTP" class="glass-input otp-input-field" placeholder="000000" maxlength="6" dir="ltr">
+                    <div id="otpError" class="error-msg-small"></div>
+                    <button id="verifyCodeBtn" class="login-btn mt-20" onclick="handleVerifyOTP()">
                         <span class="btn-text" data-i18n="verifyCode">پشکنینی کۆد</span>
-                        <div class="spinner-small" style="display:none;"></div>
+                        <div class="spinner-small"></div>
                     </button>
                 </div>
 
                 <!-- Step 3: New Password Input -->
                 <div id="forgotStep3" class="forgot-step">
-                    <div class="input-group" style="text-align:right;">
+                    <div class="input-group align-right">
                         <label data-i18n="newPass">تێپەڕەوشەی نوێ</label>
                         <div class="input-wrapper">
                             <input type="password" id="forgotNewPass" class="glass-input" placeholder="••••••••">
@@ -132,7 +132,7 @@
                         </div>
                         <div class="strength-label" id="forgotStrengthText"></div>
                     </div>
-                    <div class="input-group" style="text-align:right; margin-top:10px;">
+                    <div class="input-group align-right mt-10">
                         <label data-i18n="confirmPass">دووپاتکردنەوە</label>
                         <div class="input-wrapper">
                             <input type="password" id="forgotConfirmPass" class="glass-input" placeholder="••••••••">
@@ -146,25 +146,25 @@
                     <div id="forgotMatchFeedback" class="match-feedback">
                         <i class="fas"></i> <span></span>
                     </div>
-                    <div id="passMatchError" class="error-msg-small" style="display:none; color:#ef4444; font-size:0.75rem; margin-top:8px; text-align:center;"></div>
-                    <button id="resetPassBtn" class="login-btn" style="margin-top:20px;" onclick="handleResetPassword()">
+                    <div id="passMatchError" class="error-msg-small"></div>
+                    <button id="resetPassBtn" class="login-btn mt-20" onclick="handleResetPassword()">
                         <span class="btn-text" data-i18n="updatePass">نوێکردنەوەی پاسوۆرد</span>
-                        <div class="spinner-small" style="display:none;"></div>
+                        <div class="spinner-small"></div>
                     </button>
                 </div>
 
                 <!-- Step 4: Success Message -->
                 <div id="forgotStep4" class="forgot-step">
                     <div class="success-checkmark">
-                        <i class="fas fa-check-circle" style="font-size:3rem; color:#22c55e;"></i>
+                        <i class="fas fa-check-circle success-icon-large"></i>
                     </div>
-                    <p data-i18n="passSuccess" style="margin:15px 0;">پاسوۆردەکەت بە سەرکەوتوویی گۆڕدرا!</p>
+                    <p data-i18n="passSuccess" class="mb-15 mt-10">پاسوۆردەکەت بە سەرکەوتوویی گۆڕدرا!</p>
                     <button class="login-btn" onclick="closeForgotModal()">
                         <span data-i18n="close">داخستن</span>
                     </button>
                 </div>
 
-                <button class="modal-close-link mini-close" onclick="closeForgotModal()" style="margin-top:20px; border:none; background:none; cursor:pointer; color:var(--text-sub);" data-i18n="close">داخستن</button>
+                <button class="modal-close-link mini-close forgot-close-btn" onclick="closeForgotModal()" data-i18n="close">داخستن</button>
             </div>
         </div>
     </div>

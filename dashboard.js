@@ -3,11 +3,11 @@
 
 // ڕێکخستنی کاتی ڕێپێدراو بۆ دەرچوون (بۆ نموونە ١١:٤٥)
 const CHECKOUT_HOUR_LIMIT = 11;
-const CHECKOUT_MINUTE_LIMIT = 45;
+const CHECKOUT_MINUTE_LIMIT = 30;
 
 // ڕێکخستنی کاتی ڕێپێدراو بۆ ئامادەبوون (بۆ نموونە 7:30 بەیانی تا 12:00 نیوەڕۆ)
-const CHECKIN_START_HOUR = 7;
-const CHECKIN_START_MINUTE = 30;
+const CHECKIN_START_HOUR = 8;
+const CHECKIN_START_MINUTE = 0;
 const CHECKIN_END_HOUR = 12;
 const CHECKIN_END_MINUTE = 0;
 

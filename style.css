@@ -92,6 +92,87 @@ body {
     pointer-events: none;
 }
 
+/* Helper Classes */
+.mt-10 { margin-top: 10px; }
+.mt-20 { margin-top: 20px; }
+.mb-5 { margin-bottom: 5px; }
+.mb-15 { margin-bottom: 15px; }
+.align-right { text-align: right; }
+.text-center { text-align: center; }
+
+/* Forgot Password Modal Styles */
+.forgot-header {
+    background: linear-gradient(135deg, #0cb7c6, #e766b2) !important;
+}
+
+.forgot-modal-width {
+    max-width: 360px !important;
+}
+
+.forgot-desc {
+    margin-bottom: 15px;
+}
+
+.timer-box {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.otp-expiry-text {
+    font-size: 0.7rem;
+    color: var(--text-sub);
+}
+
+.otp-timer {
+    font-weight: bold;
+    color: var(--primary);
+    font-family: monospace;
+}
+
+.otp-input-field {
+    text-align: center;
+    letter-spacing: 5px;
+    font-size: 1.4rem;
+    font-weight: bold;
+}
+
+.error-msg-small {
+    display: none;
+    color: #ef4444;
+    font-size: 0.75rem;
+    margin-top: 8px;
+    text-align: center;
+}
+
+.spinner-small {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: none;
+    margin: 0 auto;
+}
+
+.success-icon-large {
+    font-size: 3rem;
+    color: #22c55e;
+}
+
+.forgot-close-btn {
+    margin-top: 20px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--text-sub);
+    display: block;
+    width: 100%;
+}
+
 .top-controls {
     position: fixed;
     top: 0;
