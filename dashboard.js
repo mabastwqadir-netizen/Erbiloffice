@@ -764,15 +764,34 @@ async function isVPNActive() {
 
 // --- پشکنینی لۆکەیشنی ساختە (Fake GPS Detection) ---
 function isLocationSpoofed(position) {
-    // ١. پشکنینی ئاڵای mocked کە لە هەندێک وێبگەڕدا هەیە
-    if (position.mocked || (position.coords && position.coords.mocked)) return true;
+    const coords = position.coords;
+    
+    // ١. پشکنینی فەرمی ئاڵای mocked (بۆ ئەندرۆید و کرۆم)
+    if (position.mocked || (coords && coords.mocked)) return true;
 
-    // ٢. پشکنینی تەمەنی لۆکەیشن (Timestamp) - ئەگەر لۆکەیشنەکە لە ١٥ چرکە کۆنتر بوو، ڕەنگە فێڵ بێت
+    // ٢. پشکنینی وردی (Accuracy) - بەرنامەی Lexa زۆرجار وردی ڕێک ١ یان ٠ دەدات
+    // GPSی ڕاستەقینە مەحاڵە لە ناو مۆبایلدا وردییەکەی لە ١ مەتر کەمتر بێت
+    if (coords.accuracy <= 1) return true;
+
+    // ٣. پشکنینی بەرزایی (Altitude)
+    if (coords.altitude === 0 || coords.altitude === null) {
+        // ئەگەر وردییەکە زۆر "پێرفێکت" بوو و بەرزایی نەبوو، گوماناوییە
+        if (coords.accuracy < 5) return true;
+    }
+
+    // ٤. پشکنینی جێگیریی ژمارەکان (Integer Check)
+    // زۆربەی ئەپە ساختەکان ژمارەی ڕێک دەنێرن بۆ Accuracy یان Speed
+    // ئەگەر Speed و Heading و Accuracy هەموویان ژمارەی تەواو (Integer) بوون، ئەوە نیشانەی فێڵە
+    if (Number.isInteger(coords.accuracy) && 
+        (coords.speed === 0 || Number.isInteger(coords.speed)) && 
+        (coords.heading === 0 || Number.isInteger(coords.heading))) {
+        // GPSی سروشتی هەمیشە ژمارەی دوای کۆمای هەیە بەهۆی ژاوەژاوی سێنسەرەکانەوە
+        if (coords.accuracy < 10) return true;
+    }
+
+    // ٤. پشکنینی تەمەنی لۆکەیشن (بۆ ڕێگری لە Replay Attack)
     const locationAge = Date.now() - position.timestamp;
     if (locationAge > 15000) return true; 
-
-    // ٢. پشکنینی وردی گوماناوی (ئەگەر وردی تەنها ٠ یان ١ مەتر بوو، یان زۆر جێگیر بوو)
-    if (position.coords.accuracy < 1) return true;
 
     return false;
 }
