@@ -682,22 +682,83 @@ function updateVerifyUI(type, isValid, state, message = '') {
 
 // --- پشکنینی VPN و ناوچەی کاتی ---
 async function isVPNActive() {
-    // ١. پشکنینی ناوچەی کاتی (خێراترین ڕێگە بەبێ سێرڤەر)
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+
+    // ١. پشکنینی ناوچەی کاتی
     const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (deviceTimezone !== 'Asia/Baghdad') {
-        console.warn("Timezone mismatch detected:", deviceTimezone);
-        return true;
+        console.warn("Security: Timezone mismatch detected:", deviceTimezone);
+        return true; 
     }
 
-    // ٢. پشکنینی ئایپی لە ڕێگەی خزمەتگوزاری دەرەکی (ئارەزوومەندانە بەڵام زۆر وردە)
-    try {
-        const response = await fetch('https://ipapi.co/json/');
-        const data = await response.json();
-        // ئەگەر ئایپییەکە هی Proxy یان VPN بێت، زۆربەی جار لە داتاکەدا دیارە
-        if (data.security && (data.security.vpn || data.security.proxy)) return true;
-        if (data.country_code !== 'IQ') return true; // ئەگەر لە عێراق نەبوو
-    } catch (e) { console.error("VPN Check Failed", e); }
+    // ٢. پشکنینی دژە-ئۆتۆمەیشن (Automation Check)
+    // دۆزینەوەی ئەو وێبگەڕانەی کە لەلایەن پڕۆگرام یان ئیمۆلێتەرەوە کۆنتڕۆڵ دەکرێن
+    if (navigator.webdriver) return true;
 
+    // ٣. پشکنینی قوڵی ئایپی و مێتا-داتا (Deep IP Inspection)
+    try {
+        // زیادکردنی کات بۆ ئەوەی لە سەفاری نەوەستێت ئەگەر ئینتەرنێت لاواز بوو
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // ٥ چرکە کات
+
+        const response = await fetch('https://ipapi.co/json/', { 
+            cache: 'no-store',
+            signal: controller.signal 
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) throw new Error("Connection Error");
+        
+        const data = await response.json();
+
+        const provider = (data.org || data.asn || "").toLowerCase();
+
+        // پشکنینی تایبەت بۆ iCloud Private Relay
+        const isRelay = data.security && (data.security.relay || data.security.proxy);
+        if (isIOS && isRelay && (provider.includes('apple') || provider.includes('cloudflare'))) {
+            updateStatus(translations[currentLang].iosPrivateRelay, "error");
+            return true;
+        }
+
+
+        // مەرجی یەکەم: لیستی هێڵە متمانەپێکراوەکانی عێراق (Whitelist)
+        // ئەگەر فەرمانبەر هێڵی ئاسایی مۆبایل یان وایفای ناوخۆیی بەکاربهێنێت، ڕێگری لێ ناکرێت
+        const trustedISPs = [
+            'asiacell', 'korek', 'zain', 'newroz', 'tishknet', 
+            'fastiraq', 'fastlink', 'earthlink', 'iraqcell', 'itpc'
+        ];
+        
+        if (trustedISPs.some(isp => provider.includes(isp))) return false;
+
+        // مەرجی دووەم: تەنها ئایپی ووڵاتی عێراق قبوڵکراوە
+        if (data.country_code && data.country_code !== 'IQ') {
+            console.warn("Security: Non-IQ connection detected:", data.country_code);
+            return true;
+        }
+
+        // مەرجی سێیەم: پشکنینی ئاڵای سکیوریتی (VPN/Proxy/Tor Detection)
+        if (data.security && (data.security.vpn || data.security.proxy || data.security.tor || data.security.relay)) {
+            console.warn("Security: IP identified as VPN/Proxy/Tor");
+            return true;
+        }
+
+        // مەرجی چوارەم: پشکنینی دابینکەری هێڵ (ASN/Org) بۆ دۆزینەوەی داتا سەنتەرەکان
+        const blacklistedKeywords = [
+            'vpn', 'proxy', 'hosting', 'cloud', 'data center', 'server', 'm247', 
+            'digitalocean', 'vultr', 'linode', 'amazon', 'google', 'microsoft',
+            'packet', 'dedicated', 'tunnel', 'tor', 'exit', 'hide', 'private', 
+           'clouvider', 'cogent', 'ovh', 'hetzner', 'leaseweb', 'zenlayer', 'shark', 'nord'
+        ];
+        if (blacklistedKeywords.some(kw => provider.includes(kw) && !provider.includes('mobile'))) {
+            console.warn("Security: Hosting/VPN organization detected:", provider);
+            return true;
+        }
+
+    } catch (e) { 
+        console.error("Critical: Security API check failed.");
+        return false; // بۆ ئاسانکاری لە مۆبایل، ئەگەر API کاری نەکرد ڕێگەی پێدەدەین بەو مەرجەی کات و لۆکەیشنی ڕاست بێت
+    }
+    
     return false;
 }
 
