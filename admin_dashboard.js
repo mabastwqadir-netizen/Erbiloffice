@@ -537,7 +537,7 @@ function renderAttendance(attendance, employees) {
             <div><i class="fas fa-fingerprint header-icon"></i> ${translations[currentLang].colStatus}</div>
             <div><i class="fas fa-chart-pie header-icon"></i> ${translations[currentLang].statusPresentt}</div>
             <div><i class="fas fa-tags header-icon"></i> ${translations[currentLang].colClass}</div>
-            <div style="text-align: center;"><i class="fas fa-comment-dots header-icon"></i> ${translations[currentLang].colJust}</div>
+            <div style="text-align: center;"><i class="fa-solid fa-gear"></i> ${translations[currentLang].colJust}</div>
         </div>
     `;
 
