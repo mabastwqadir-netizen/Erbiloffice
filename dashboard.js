@@ -619,9 +619,13 @@ function updateLocationSuitabilityAndUI() {
     const btn = document.getElementById('checkinBtn');
     const outBtn = document.getElementById('checkoutBtn');
     const txt = document.getElementById('checkinText');
+    const accuracyAreaEl = document.getElementById('accuracyArea'); // Get the element
 
+    // وەرگرتنی ڕادەی وردی ڕێپێدراو لە پڕۆفایلی بنکەکە، ئەگەر نەبوو ١٥٠ مەتر وەک دیفۆڵت
+    const allowedAccuracy = (userProfile && userProfile.branches && userProfile.branches.accuracy) ? userProfile.branches.accuracy : 150;
+    
     const currentAccuracy = userPos ? Math.round(userPos.accuracy) : Infinity;
-    const isAccurateEnough = currentAccuracy <= 150;
+    const isAccurateEnough = currentAccuracy <= allowedAccuracy;
 
     let isWithinGeofence = true;
     if (userProfile && userProfile.branches &&
@@ -631,15 +635,25 @@ function updateLocationSuitabilityAndUI() {
             userPos.latitude, userPos.longitude,
             userProfile.branches.latitude, userProfile.branches.longitude
         );
-        const allowedRadius = userProfile.branches.accuracy || 150;
+        const allowedRadius = allowedAccuracy;
         isWithinGeofence = distanceToBranch <= allowedRadius;
+
+        // Display distance here
+        if (accuracyAreaEl) {
+            accuracyAreaEl.innerText = `${translations[currentLang].distBranch}: ${Math.round(distanceToBranch)} مەتر`;
+        }
     } else if (userProfile && !userProfile.branches) {
         isWithinGeofence = true;
+        if (accuracyAreaEl) {
+            accuracyAreaEl.innerText = translations[currentLang].noBranch; // Display "No branch info"
+        }
     } else {
         isWithinGeofence = false; // Cannot determine geofence without data
+        if (accuracyAreaEl) {
+            accuracyAreaEl.innerText = translations[currentLang].errorFetch; // Or a more specific error
+        }
     }
 
-    // The core suitability logic now includes jitter detection
     // If isJitteringDetected is null, it means we are still collecting data, so don't mark as suitable yet.
     isLocationSuitable = isAccurateEnough && isWithinGeofence && (isJitteringDetected === true);
 
@@ -1009,13 +1023,20 @@ async function processCheckOut() {
         .eq('user_id', currentUser.id)
         .is('check_out_time', null)
         .select('check_in_time, check_out_time')
-        .single();
+        .maybeSingle(); // گۆڕانکاری بۆ ڕێگری لە هەڵەی Coerce ئەگەر ڕیکۆردەکە نەدۆزرایەوە
 
     if (error) {
         console.error("Checkout DB Error:", error);
         updateStatus(error.message, "error");
         btn.disabled = false;
         btn.innerHTML = originalHTML;
+    } else if (!data) {
+        // ئەگەر هیچ ڕیکۆردێکی چالاک نەبوو بۆ داخستن
+        console.warn("No active check-in found to update.");
+        updateStatus(translations[currentLang].errorFetch, "error");
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+        setTimeout(() => location.reload(), 2000);
     } else {
         showCheckoutSuccessModal(data.check_in_time, data.check_out_time);
         if (btn) btn.style.display = 'none';

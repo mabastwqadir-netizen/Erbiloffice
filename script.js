@@ -274,7 +274,7 @@ async function handleLogin() {
                 .from('profiles')
                 .select('role')
                 .eq('id', data.user.id)
-                .single();
+                .maybeSingle(); // چارەسەری هەڵەی Coerce لە کاتی لۆگین
 
             if (!profileError && profile && profile.role === 'admin') {
                 window.location.href = "admin_dashboard.html";

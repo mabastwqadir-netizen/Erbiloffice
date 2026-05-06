@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         .from('profiles')
         .select('role')
         .eq('id', session.user.id)
-        .single();
+        .maybeSingle(); // بەکارهێنانی maybeSingle بۆ دڵنیایی زیاتر لە کاتی بارکردنی پڕۆفایل
 
     if (profError || !profile || profile.role !== 'admin') {
         window.location.replace(profile?.role === 'employee' ? 'dashboard.html' : 'index.html');
