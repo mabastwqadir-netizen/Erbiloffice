@@ -32,6 +32,14 @@ let lastViewedStaffId = null; // پاشەکەوتکردنی ئایدی فەرم�
 let selectedLeaveStartDate = null;
 let selectedLeaveStartTime = null;
 let selectedLeaveEndTime = null;
+
+// Global variables for jitter check (پشکنینی لەرزینی شوێن)
+let locationHistory = []; // Stores { latitude, longitude }
+const JITTER_CHECK_MIN_POINTS = 3; // Minimum points to check for jitter
+const JITTER_CHECK_WINDOW_MS = 3000; // 3 seconds window for jitter check
+let isJitteringDetected = null; // True if jitter is detected, false if static, null if not enough data yet
+let jitterCheckTimeout = null; // Timeout to trigger jitter analysis
+
 let staffDetailModal = null; // New global variable for the staff detail modal
 let selectedLeaveEndDate = null;
 let selectedLeaveReason = null;
@@ -498,6 +506,7 @@ function startTracking() {
     if (watchID) navigator.geolocation.clearWatch(watchID);
     if (attemptTimer) clearTimeout(attemptTimer);
 
+    if (jitterCheckTimeout) clearTimeout(jitterCheckTimeout); // Clear any pending jitter check
     // ئەگەر ٣ جار هەوڵیدا و نەبوو، سیستمەکە بوەستێنە و دوگمەی ڕیفرێش نیشان بدە
     if (locationAttempts >= 3) {
         updateVerifyUI('location', false, null, translations[currentLang].errorFetch);
@@ -506,6 +515,10 @@ function startTracking() {
         [btn, outBtn].forEach(b => { if(b) b.disabled = true; });
         return;
     }
+
+    // Reset jitter check state for a new tracking session
+    locationHistory = [];
+    isJitteringDetected = null; // Reset to null, meaning "not yet determined"
 
     locationAttempts++;
     userPos = null; // پاککردنەوەی داتای پێشوو بۆ دڵنیایی زیاتر
@@ -521,6 +534,7 @@ function startTracking() {
 
     watchID = navigator.geolocation.watchPosition(
         (position) => {
+            // یەکەم: پشکنینی ئاڵا ڕاستەوخۆکانی فێڵ
             // پشکنینی لۆکەیشنی ساختە
             if (isLocationSpoofed(position)) {
                 updateVerifyUI('location', false, null, translations[currentLang].mockLocationError);
@@ -530,52 +544,21 @@ function startTracking() {
             }
 
             userPos = position.coords; // Update userPos with current coordinates
-            const accuracy = Math.round(userPos.accuracy);
-            const isAccurateEnough = accuracy <= 150; // GPS accuracy check
+           // کۆکردنەوەی داتا بۆ پشکنینی لەرزین
+            locationHistory.push({ latitude: userPos.latitude, longitude: userPos.longitude });
 
-            isLocationSuitable = isAccurateEnough;
-
-            // Perform geofence check only if userProfile and branch data are available
-            if (userProfile && userProfile.branches && userProfile.branches.latitude !== undefined && userProfile.branches.longitude !== undefined) {
-                const distanceToBranch = calculateDistance( // Make sure branch coordinates are valid
-                    userPos.latitude, userPos.longitude,
-                    userProfile.branches.latitude, userProfile.branches.longitude
-                );
-                const allowedRadius = userProfile.branches.accuracy || 150; // بەکارهێنانی ١٥٠ وەکFallback ئەگەر لە داتابەیس دیاری نەکرابوو
-                isLocationSuitable = isAccurateEnough && (distanceToBranch <= allowedRadius);
-                
-                // نیشاندانی تەنها دووری لە بنکە و شاردنەوەی سنووری ڕێپێدراو
-                document.getElementById('accuracyArea').innerText = `${translations[currentLang].distBranch}: ${Math.round(distanceToBranch)} مەتر`;
-            }
-            
-            refreshActionButtons();
-
-            // Update text status for checkin button (if visible)
-            if (txt && btn.style.display !== 'none') {
-                if (!isDeviceVerified) {
-                    txt.innerText = translations[currentLang].invalidDevice;
-                } else if (!isAccurateEnough) {
-                    txt.innerText = translations[currentLang].gpsWeak;
-                } else if (!isLocationSuitable) {
-                    txt.innerText = translations[currentLang].notSuitable;
-                } else if (!isCheckInTimeAllowed()) {
-                    // لۆکەیشن و ئامێر دروستن بەڵام کاتی هاتن نییە - نیشاندانی کاتی بەردەستبوون
-                    const startStr = `\u200E${CHECKIN_START_HOUR}:${CHECKIN_START_MINUTE.toString().padStart(2, '0')} AM`;
-                    const endStr = `\u200E${CHECKIN_END_HOUR === 12 ? 12 : CHECKIN_END_HOUR % 12}:${CHECKIN_END_MINUTE.toString().padStart(2, '0')} ${CHECKIN_END_HOUR >= 12 ? 'PM' : 'AM'}`;
-                    txt.innerText = currentLang === 'ku' 
-                        ? `لە ${startStr} بۆ ${endStr} بەردەستە` 
-                        : `متاح من ${startStr} الی ${endStr}`;
-                } else {
-                    txt.innerText = translations[currentLang].checkin;
-                }
+            // ئەگەر ژمارەی پێویست لە پۆینت کۆکرایەوە یان کاتی پێویست تێپەڕی، لەرزینەکە شیکار بکە
+            if (locationHistory.length >= JITTER_CHECK_MIN_POINTS && (Date.now() - position.timestamp >= JITTER_CHECK_WINDOW_MS || locationHistory.length > 10)) {
+                analyzeLocationJitter();
+                updateLocationSuitabilityAndUI(); // دوای شیکارکردنی لەرزین، گونجاوی گشتی نوێ بکەرەوە
+            } else if (jitterCheckTimeout === null) { // تایمەرەکە تەنها یەکجار دەستپێبکە
+                 jitterCheckTimeout = setTimeout(() => {
+                    analyzeLocationJitter();
+                    updateLocationSuitabilityAndUI();
+                }, JITTER_CHECK_WINDOW_MS);
             }
 
-            // Update verification UI
-            if (isLocationSuitable) updateVerifyUI('location', true, null, translations[currentLang].suitable); // Location is fully suitable
-            else if (!isAccurateEnough) updateVerifyUI('location', null, 'loading', translations[currentLang].gpsWeak); // GPS accuracy is the issue
-            else updateVerifyUI('location', false, null, translations[currentLang].notSuitable); // Outside geofence
-            
-            refreshActionButtons();
+            updateLocationSuitabilityAndUI(); // هەمیشە UI نوێ بکەرەوە
 
             // If location is suitable, we can clear the watch and timer for this attempt
             if (isLocationSuitable) {
@@ -590,62 +573,13 @@ function startTracking() {
                 updateStatus(translations[currentLang].msgLocErr, "error"); // Show error message
                 [btn, outBtn].forEach(b => { if(b) b.disabled = true; }); // Disable buttons on permission error
             }
+            // ئەگەر هەڵەیەک ڕوویدا، watch و jitter timer پاک بکەرەوە
+            if (watchID) navigator.geolocation.clearWatch(watchID);
+            if (jitterCheckTimeout) clearTimeout(jitterCheckTimeout);
         },
         options
     );
 
-    // ئەگەر لە ماوەی ١٢ چرکەدا لۆکەیشنەکی وورد نەدۆزرایەوە، هەوڵێکی نوێ بدە یان بوەستە
-    attemptTimer = setTimeout(() => {
-        // Clear any existing watch, as we are either retrying or stopping
-        if (watchID) navigator.geolocation.clearWatch(watchID);
-
-        // Re-evaluate suitability based on the last known userPos (if any)
-        const currentAccuracy = userPos ? Math.round(userPos.accuracy) : Infinity; // Get last known accuracy
-        const isAccurateEnough = currentAccuracy <= 150; // Check if last known accuracy was good
-
-        let isWithinGeofence = true; // Default to true if no branch data or userPos for geofence check
-        let lastKnownDistanceToBranch = Infinity;
-
-        // Check geofence based on last known position
-        if (userProfile && userProfile.branches && userProfile.branches.latitude && userProfile.branches.longitude && userPos) {
-            const distanceToBranch = calculateDistance(
-                userPos.latitude, userPos.longitude,
-                userProfile.branches.latitude, userProfile.branches.longitude
-            );
-            const allowedRadius = userProfile.branches.accuracy || 100;
-            isWithinGeofence = distanceToBranch <= allowedRadius;
-            lastKnownDistanceToBranch = distanceToBranch;
-        } else if (userProfile && !userProfile.branches) {
-            // If no branch assigned, geofence check is not applicable, so consider within.
-            isWithinGeofence = true;
-        } else {
-            // If critical data is missing, assume not within for safety.
-            isWithinGeofence = false; // Assume not within for safety if data is missing
-        }
-
-        const isCurrentlySuitable = isAccurateEnough && isWithinGeofence;
-
-        if (!isCurrentlySuitable) { // If after timeout, location is still not suitable
-            if (locationAttempts < 3) {
-                startTracking();
-            } else {
-                if (watchID) navigator.geolocation.clearWatch(watchID); // Ensure watch is cleared
-                // Update UI based on why it failed after attempts
-            if (!isAccurateEnough) updateVerifyUI('location', false, null, translations[currentLang].gpsWeak);
-            else if (!isWithinGeofence) updateVerifyUI('location', false, null, translations[currentLang].notSuitable);
-            else updateVerifyUI('location', false, null, translations[currentLang].errorFetch); // Generic error
-                // Ensure buttons are disabled if all attempts fail
-              [btn, outBtn].forEach(b => { if(b) b.disabled = true; });
-                // Also update the checkinText if it's visible
-            if (txt && btn.style.display !== 'none') {
-                txt.innerText = translations[currentLang].retryBtn;
-                }
-            }
-             } else {
-            // If it became suitable just before the timeout, reset attempts
-            locationAttempts = 0;
-        }
-    }, 12000);
 }
 
 // --- Helper for Modern Verification UI (Device & Location) ---
@@ -662,21 +596,92 @@ function updateVerifyUI(type, isValid, state, message = '') {
         el.classList.add('loading');
         statusIconEl.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
         statusTextEl.innerText = message || translations[currentLang].verifying;
-    } else if (isValid === true) {
+    } else if (isValid === true) { // لۆکەیشن بە تەواوی گونجاوە
         el.classList.add('verify-success');
         statusIconEl.innerHTML = '<i class="fas fa-check-circle"></i>';
         statusTextEl.innerText = message || translations[currentLang].suitable;
-    } else {
+    } else { // لۆکەیشن گونجاو نییە
         el.classList.add('verify-error');
         statusIconEl.innerHTML = '<i class="fas fa-times-circle"></i>';
         statusTextEl.innerText = message || translations[currentLang].errorFetch;
     }
 
-    // نیشاندانی دوگمەی دووبارە پشکنین تەنها ئەگەر یەکێک لە مەرجەکان سوور بوو
+    // نیشاندانی دوگمەی دووبارە پشکنین تەنها ئەگەر یەکێک لە مەرجەکان سوور بوو یان هێشتا لە دۆخی بارکردن بوو
     const hasError = document.querySelectorAll('.verify-item.verify-error').length > 0;
     const refreshBtn = document.getElementById('refreshLocBtn');
     if (refreshBtn) {
         refreshBtn.style.display = hasError ? 'flex' : 'none';
+    }
+}
+
+// New helper function to centralize suitability update
+function updateLocationSuitabilityAndUI() {
+    const btn = document.getElementById('checkinBtn');
+    const outBtn = document.getElementById('checkoutBtn');
+    const txt = document.getElementById('checkinText');
+
+    const currentAccuracy = userPos ? Math.round(userPos.accuracy) : Infinity;
+    const isAccurateEnough = currentAccuracy <= 150;
+
+    let isWithinGeofence = true;
+    if (userProfile && userProfile.branches &&
+        userProfile.branches.latitude !== null && userProfile.branches.latitude !== undefined &&
+        userProfile.branches.longitude !== null && userProfile.branches.longitude !== undefined && userPos) {
+        const distanceToBranch = calculateDistance(
+            userPos.latitude, userPos.longitude,
+            userProfile.branches.latitude, userProfile.branches.longitude
+        );
+        const allowedRadius = userProfile.branches.accuracy || 150;
+        isWithinGeofence = distanceToBranch <= allowedRadius;
+    } else if (userProfile && !userProfile.branches) {
+        isWithinGeofence = true;
+    } else {
+        isWithinGeofence = false; // Cannot determine geofence without data
+    }
+
+    // The core suitability logic now includes jitter detection
+    // If isJitteringDetected is null, it means we are still collecting data, so don't mark as suitable yet.
+    isLocationSuitable = isAccurateEnough && isWithinGeofence && (isJitteringDetected === true);
+
+    // Update UI based on the new isLocationSuitable
+    if (isLocationSuitable) {
+        updateVerifyUI('location', true, null, translations[currentLang].suitable);
+    } else if (isJitteringDetected === false) { // Explicitly static (no jitter)
+        updateVerifyUI('location', false, null, translations[currentLang].mockLocationError); // Use mock error for static
+    } else if (!isAccurateEnough) {
+        updateVerifyUI('location', false, null, translations[currentLang].gpsWeak);
+    } else if (!isWithinGeofence) {
+        updateVerifyUI('location', false, null, translations[currentLang].notSuitable);
+    } else if (isJitteringDetected === null) { // Still verifying jitter
+        updateVerifyUI('location', null, 'loading', translations[currentLang].verifyingStability);
+    } else {
+        // Fallback for other issues
+        updateVerifyUI('location', false, null, translations[currentLang].errorFetch);
+    }
+
+    refreshActionButtons();
+
+    // Update checkin button text
+    if (txt && btn.style.display !== 'none') {
+        if (!isDeviceVerified) {
+            txt.innerText = translations[currentLang].invalidDevice;
+        } else if (isJitteringDetected === false) {
+            txt.innerText = translations[currentLang].mockLocationError;
+        } else if (!isAccurateEnough) {
+            txt.innerText = translations[currentLang].gpsWeak;
+        } else if (!isWithinGeofence) {
+            txt.innerText = translations[currentLang].notSuitable;
+        } else if (isJitteringDetected === null) { // Still verifying jitter
+            txt.innerText = translations[currentLang].verifyingStability;
+        } else if (!isCheckInTimeAllowed()) {
+            const startStr = `\u200E${CHECKIN_START_HOUR}:${CHECKIN_START_MINUTE.toString().padStart(2, '0')} AM`;
+            const endStr = `\u200E${CHECKIN_END_HOUR === 12 ? 12 : CHECKIN_END_HOUR % 12}:${CHECKIN_END_MINUTE.toString().padStart(2, '0')} ${CHECKIN_END_MINUTE >= 12 ? 'PM' : 'AM'}`;
+            txt.innerText = currentLang === 'ku' 
+                ? `لە ${startStr} بۆ ${endStr} بەردەستە` 
+                : `متاح من ${startStr} الی ${endStr}`;
+        } else {
+            txt.innerText = translations[currentLang].checkin;
+        }
     }
 }
 
@@ -794,6 +799,25 @@ function isLocationSpoofed(position) {
     if (locationAge > 15000) return true; 
 
     return false;
+}
+
+// --- پشکنینی لەرزینی شوێن (Jitter Check) ---
+function analyzeLocationJitter() {
+    if (locationHistory.length < JITTER_CHECK_MIN_POINTS) {
+        isJitteringDetected = null; // Not enough data yet
+        return;
+    }
+
+    // پشکنین ئەگەر هەموو پۆتانەکان بە تەواوی وەک یەک بن (بۆ دۆزینەوەی لۆکەیشنی ساختە)
+    const firstLat = locationHistory[0].latitude;
+    const firstLong = locationHistory[0].longitude;
+
+    const allStatic = locationHistory.every(p =>
+        p.latitude === firstLat && p.longitude === firstLong
+    );
+
+    isJitteringDetected = !allStatic; // ئەگەر هەموویان وەک یەک نەبوون، ئەوا لەرزین هەیە
+    locationHistory = []; // پاککردنەوەی مێژوو بۆ پشکنینی داهاتوو
 }
 
 // --- ٤. کرداری هاتن (Check In) ---
