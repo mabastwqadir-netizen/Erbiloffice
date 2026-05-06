@@ -36,7 +36,7 @@ let selectedLeaveEndTime = null;
 // Global variables for jitter check (پشکنینی لەرزینی شوێن)
 let locationHistory = []; // Stores { latitude, longitude }
 const JITTER_CHECK_MIN_POINTS = 3; // Minimum points to check for jitter
-const JITTER_CHECK_WINDOW_MS = 3000; // 3 seconds window for jitter check
+const JITTER_CHECK_WINDOW_MS = 2000; // کەمکردنەوەی بۆ ٢ چرکە بۆ خێراکردنی پڕۆسەکە
 let isJitteringDetected = null; // True if jitter is detected, false if static, null if not enough data yet
 let jitterCheckTimeout = null; // Timeout to trigger jitter analysis
 
@@ -547,10 +547,18 @@ function startTracking() {
            // کۆکردنەوەی داتا بۆ پشکنینی لەرزین
             locationHistory.push({ latitude: userPos.latitude, longitude: userPos.longitude });
 
+            // پشکنینی خێرا: ئەگەر پێش کاتی دیاریکراو لەرزین دۆزرایەوە، یەکسەر ڕێگەی پێ بدە
+            if (locationHistory.length >= 2) {
+                const first = locationHistory[0];
+                const current = locationHistory[locationHistory.length - 1];
+                if (first.latitude !== current.latitude || first.longitude !== current.longitude) {
+                    isJitteringDetected = true;
+                }
+            }
+
             // ئەگەر ژمارەی پێویست لە پۆینت کۆکرایەوە یان کاتی پێویست تێپەڕی، لەرزینەکە شیکار بکە
-            if (locationHistory.length >= JITTER_CHECK_MIN_POINTS && (Date.now() - position.timestamp >= JITTER_CHECK_WINDOW_MS || locationHistory.length > 10)) {
+            if (isJitteringDetected === true || (locationHistory.length >= JITTER_CHECK_MIN_POINTS && locationHistory.length > 10)) {
                 analyzeLocationJitter();
-                updateLocationSuitabilityAndUI(); // دوای شیکارکردنی لەرزین، گونجاوی گشتی نوێ بکەرەوە
             } else if (jitterCheckTimeout === null) { // تایمەرەکە تەنها یەکجار دەستپێبکە
                  jitterCheckTimeout = setTimeout(() => {
                     analyzeLocationJitter();
