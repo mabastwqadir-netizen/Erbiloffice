@@ -560,32 +560,41 @@ function startTracking() {
            // کۆکردنەوەی داتا بۆ پشکنینی لەرزین
             locationHistory.push({ latitude: userPos.latitude, longitude: userPos.longitude });
 
-            // پشکنینی خێرا: ئەگەر پێش کاتی دیاریکراو لەرزین دۆزرایەوە، یەکسەر ڕێگەی پێ بدە
+            // Check for early jitter detection (if at least 2 points are different)
             if (locationHistory.length >= 2) {
                 const first = locationHistory[0];
                 const current = locationHistory[locationHistory.length - 1];
                 if (first.latitude !== current.latitude || first.longitude !== current.longitude) {
-                    isJitteringDetected = true;
+                    isJitteringDetected = true; // Jitter detected early
+                    analyzeLocationJitter();
+                    updateLocationSuitabilityAndUI();
+                    // If location is now suitable, we can stop watching
+                    if (isLocationSuitable) {
+                        if (watchID) navigator.geolocation.clearWatch(watchID);
+                        locationAttempts = 0; // Reset attempts on success
+                    }
+                    return; // Exit, no need for timeout if jitter confirmed
                 }
             }
 
-            // ئەگەر ژمارەی پێویست لە پۆینت کۆکرایەوە یان کاتی پێویست تێپەڕی، لەرزینەکە شیکار بکە
-            if (isJitteringDetected === true || (locationHistory.length >= JITTER_CHECK_MIN_POINTS && locationHistory.length > 10)) {
-                analyzeLocationJitter();
-            } else if (jitterCheckTimeout === null) { // تایمەرەکە تەنها یەکجار دەستپێبکە
-                 jitterCheckTimeout = setTimeout(() => {
+            // If not early jitter, set a timeout to analyze after the window
+            // This timeout will be cleared if a new position comes in before it fires
+            // تەنها ئەگەر تایمەرەکە پێشتر دانەنرابوو، دەستی پێ بکە بۆ ڕێگری لە دواکەوتن
+            if (isJitteringDetected === null && !jitterCheckTimeout) {
+                jitterCheckTimeout = setTimeout(() => {
                     analyzeLocationJitter();
                     updateLocationSuitabilityAndUI();
+                    // If location is now suitable, we can stop watching
+                    if (isLocationSuitable) {
+                        if (watchID) navigator.geolocation.clearWatch(watchID);
+                        locationAttempts = 0; // Reset attempts on success
+                    }
+                    jitterCheckTimeout = null;
                 }, JITTER_CHECK_WINDOW_MS);
             }
 
-            updateLocationSuitabilityAndUI(); // هەمیشە UI نوێ بکەرەوە
-
-            // If location is suitable, we can clear the watch and timer for this attempt
-            if (isLocationSuitable) {
-                if (watchID) navigator.geolocation.clearWatch(watchID);
-                if (attemptTimer) clearTimeout(attemptTimer);
-                locationAttempts = 0; // Reset attempts on success
+            // Always update UI to reflect current state (e.g., accuracy, geofence, or "verifying stability")
+            updateLocationSuitabilityAndUI();
             }
         },
         (err) => {
@@ -597,6 +606,10 @@ function startTracking() {
             // ئەگەر هەڵەیەک ڕوویدا، watch و jitter timer پاک بکەرەوە
             if (watchID) navigator.geolocation.clearWatch(watchID);
             if (jitterCheckTimeout) clearTimeout(jitterCheckTimeout);
+            jitterCheckTimeout = null; // Ensure it's null
+            // If location failed, it's not suitable
+            isLocationSuitable = false;
+            updateLocationSuitabilityAndUI(); // Update UI to reflect error state
         },
         options
     );
@@ -682,7 +695,7 @@ function updateLocationSuitabilityAndUI() {
     if (isLocationSuitable) {
         updateVerifyUI('location', true, null, translations[currentLang].suitable);
     } else if (isJitteringDetected === false) { // Explicitly static (no jitter)
-        updateVerifyUI('location', false, null, translations[currentLang].mockLocationError); // Use mock error for static
+        updateVerifyUI('location', false, null, translations[currentLang].mockLocationError);
     } else if (!isAccurateEnough) {
         updateVerifyUI('location', false, null, translations[currentLang].gpsWeak);
     } else if (!isWithinGeofence) {
@@ -701,6 +714,7 @@ function updateLocationSuitabilityAndUI() {
         if (!isDeviceVerified) {
             txt.innerText = translations[currentLang].invalidDevice;
         } else if (isJitteringDetected === false) {
+            btn.disabled = true; // دڵنیایی زیاتر لە ناچالاکبوونی دوگمەکە
             txt.innerText = translations[currentLang].mockLocationError;
         } else if (!isAccurateEnough) {
             txt.innerText = translations[currentLang].gpsWeak;
@@ -838,20 +852,24 @@ function isLocationSpoofed(position) {
 
 // --- پشکنینی لەرزینی شوێن (Jitter Check) ---
 function analyzeLocationJitter() {
-    if (locationHistory.length < JITTER_CHECK_MIN_POINTS) {
-        isJitteringDetected = null; // Not enough data yet
+    // If jitter was already detected early, no need to re-analyze unless history is reset
+    if (isJitteringDetected === true) {
+        locationHistory = []; // Reset history after confirmed jitter
         return;
     }
 
-    // پشکنین ئەگەر هەموو پۆتانەکان بە تەواوی وەک یەک بن (بۆ دۆزینەوەی لۆکەیشنی ساختە)
+    // If not enough points to make a definitive decision, keep it null
+    if (locationHistory.length < JITTER_CHECK_MIN_POINTS) {
+        // isJitteringDetected remains null
+        return;
+    }
+
+    // Check if all collected points are static
     const firstLat = locationHistory[0].latitude;
     const firstLong = locationHistory[0].longitude;
+    const allStatic = locationHistory.every(p => p.latitude === firstLat && p.longitude === firstLong);
 
-    const allStatic = locationHistory.every(p =>
-        p.latitude === firstLat && p.longitude === firstLong
-    );
-
-    isJitteringDetected = !allStatic; // ئەگەر هەموویان وەک یەک نەبوون، ئەوا لەرزین هەیە
+    isJitteringDetected = !allStatic; // If all static, then no jitter (false), otherwise jitter (true)
     locationHistory = []; // پاککردنەوەی مێژوو بۆ پشکنینی داهاتوو
 }
 
