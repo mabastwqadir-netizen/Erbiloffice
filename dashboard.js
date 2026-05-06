@@ -595,7 +595,6 @@ function startTracking() {
 
             // Always update UI to reflect current state (e.g., accuracy, geofence, or "verifying stability")
             updateLocationSuitabilityAndUI();
-            }
         },
         (err) => {
             console.warn("Location attempt failed:", err.message);
