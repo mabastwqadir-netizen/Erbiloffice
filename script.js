@@ -56,11 +56,19 @@ document.getElementById('pwaBanner')?.addEventListener('click', (e) => {
 // --- Version Check for Forced Refresh ---
 async function checkAppVersion() {
     try {
-        // Add a cache-buster to ensure we always fetch the latest version.json
-        const response = await fetch('version.json?t=' + new Date().getTime());
+        // پشکنین بکە کە ئایا لەم ١٠ خولەکەی دواییدا پشکنین کراوە؟
+        const lastCheck = localStorage.getItem('last_version_check');
+        const now = Date.now();
+        if (lastCheck && now - lastCheck < 600000) return false; // ١٠ خولەک جارێک زیاتر مەپشکنە
+
+        // لابردنی cache-buster بۆ ئەوەی سێرڤەر بتوانێت فایلەکە لە کاشەوە بداتەوە و ڕیکوێست کەم بێتەوە
+        const response = await fetch('version.json');
         const data = await response.json();
         const serverVersion = data.version;
         const clientVersion = localStorage.getItem('app_version');
+
+        localStorage.setItem('last_version_check', now);
+
 
         if (clientVersion && clientVersion !== serverVersion) {
             showUpdateModal(serverVersion);

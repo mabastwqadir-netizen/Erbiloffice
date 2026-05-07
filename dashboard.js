@@ -532,6 +532,7 @@ function startTracking() {
     // Reset jitter check state for a new tracking session
     locationHistory = [];
     isJitteringDetected = null; // Reset to null, meaning "not yet determined"
+    isLocationSuitable = false; // Reset suitability flag for the new attempt
 
     locationAttempts++;
     userPos = null; // پاککردنەوەی داتای پێشوو بۆ دڵنیایی زیاتر
@@ -539,62 +540,46 @@ function startTracking() {
     if (txt && btn.style.display !== 'none') txt.innerText = `${translations[currentLang].searching} (${locationAttempts}/3)`; // Update checkin button text
     updateVerifyUI('location', null, 'loading', `${translations[currentLang].searching} (${locationAttempts}/3)`);
 
-    const options = { 
-        enableHighAccuracy: true, 
-        timeout: 12000, 
-        maximumAge: 0 
-    };
+    const options = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
 
     watchID = navigator.geolocation.watchPosition(
         (position) => {
-            // یەکەم: پشکنینی ئاڵا ڕاستەوخۆکانی فێڵ
-            // پشکنینی لۆکەیشنی ساختە
             if (isLocationSpoofed(position)) {
                 updateVerifyUI('location', false, null, translations[currentLang].mockLocationError);
                 [btn, outBtn].forEach(b => { if(b) b.disabled = true; });
-                if (watchID) navigator.geolocation.clearWatch(watchID);
+                // لێرە چاودێری ڕانادەگرین بۆ ئەوەی ئەگەر فەرمانبەرەکە ئەپی فەیکەکەی کوژاندەوە، یەکسەر سیستمەکە ئاسایی بێتەوە
                 return;
             }
 
-            userPos = position.coords; // Update userPos with current coordinates
-           // کۆکردنەوەی داتا بۆ پشکنینی لەرزین
+            userPos = position.coords;
             locationHistory.push({ latitude: userPos.latitude, longitude: userPos.longitude });
 
-            // Check for early jitter detection (if at least 2 points are different)
+            // پشکنینی لەرزین (Jitter Detection) بۆ دڵنیابوونەوە لەوەی لۆکەیشنەکە ڕاستەقینەیە
             if (locationHistory.length >= 2) {
                 const first = locationHistory[0];
                 const current = locationHistory[locationHistory.length - 1];
+                
+                // ئەگەر دوو خاڵی جیاوازمان هەبوو، واتە سێنسەرەکە دەلەرزێت و لۆکەیشنەکە ڕاستەقینەیە
                 if (first.latitude !== current.latitude || first.longitude !== current.longitude) {
                     isJitteringDetected = true; // Jitter detected early
-                    analyzeLocationJitter();
-                    updateLocationSuitabilityAndUI();
-                    // If location is now suitable, we can stop watching
-                    if (isLocationSuitable) {
-                        if (watchID) navigator.geolocation.clearWatch(watchID);
-                        locationAttempts = 0; // Reset attempts on success
-                    }
-                    return; // Exit, no need for timeout if jitter confirmed
                 }
             }
 
-            // If not early jitter, set a timeout to analyze after the window
-            // This timeout will be cleared if a new position comes in before it fires
-            // تەنها ئەگەر تایمەرەکە پێشتر دانەنرابوو، دەستی پێ بکە بۆ ڕێگری لە دواکەوتن
-            if (isJitteringDetected === null && !jitterCheckTimeout) {
-                jitterCheckTimeout = setTimeout(() => {
-                    analyzeLocationJitter();
-                    updateLocationSuitabilityAndUI();
-                    // If location is now suitable, we can stop watching
-                    if (isLocationSuitable) {
-                        if (watchID) navigator.geolocation.clearWatch(watchID);
-                        locationAttempts = 0; // Reset attempts on success
-                    }
-                    jitterCheckTimeout = null;
-                }, JITTER_CHECK_WINDOW_MS);
+            // ئەگەر مێژووی لۆکەیشن زۆر بوو (بۆ نموونە ٥ خاڵ) و هێشتا هەمووی وەک یەک بوو، واتە فەیکە
+            if (locationHistory.length >= 5 && isJitteringDetected === null) {
+                const first = locationHistory[0];
+                const allSame = locationHistory.every(p => p.latitude === first.latitude && p.longitude === first.longitude);
+                if (allSame) {
+                    isJitteringDetected = false; // جێگیری زۆر نیشانەی فێڵە
+                }
             }
 
-            // Always update UI to reflect current state (e.g., accuracy, geofence, or "verifying stability")
             updateLocationSuitabilityAndUI();
+            
+            // ئەگەر هەموو مەرجەکان جێبەجێ بوون، دەتوانین بۆ ماوەیەک پشکنین خاو بکەینەوە (Optional)
+            if (isLocationSuitable) {
+                locationAttempts = 0;
+            }
         },
         (err) => {
             console.warn("Location attempt failed:", err.message);
@@ -603,17 +588,22 @@ function startTracking() {
                 [btn, outBtn].forEach(b => { if(b) b.disabled = true; }); // Disable buttons on permission error
             }
             // ئەگەر هەڵەیەک ڕوویدا، watch و jitter timer پاک بکەرەوە
-            if (watchID) navigator.geolocation.clearWatch(watchID);
-            if (jitterCheckTimeout) clearTimeout(jitterCheckTimeout);
-            jitterCheckTimeout = null; // Ensure it's null
-            // If location failed, it's not suitable
-            isLocationSuitable = false;
-            updateLocationSuitabilityAndUI(); // Update UI to reflect error state
         },
         options
     );
-
 }
+
+// یەکخستنی لیسنەرەکانی Visibility بۆ پاراستنی ڕیکوێست و باتری
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        if (watchID) {
+            navigator.geolocation.clearWatch(watchID);
+            watchID = null;
+        }
+    } else {
+        if (!watchID) startTracking();
+    }
+});
 
 // --- Helper for Modern Verification UI (Device & Location) ---
 function updateVerifyUI(type, isValid, state, message = '') {

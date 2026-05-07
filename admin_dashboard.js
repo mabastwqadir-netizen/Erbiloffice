@@ -86,120 +86,140 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
     // --- Modern Real-time Synchronizer ---
-    // چاودێریکردنی هەموو گۆڕانکارییەکانی ئامادەبوون و ڕوونکردنەوەکان بە شێوەی زیندوو
-    adminClient
-        .channel('db_live_sync')
-        // گوێگرتن لە (Insert, Update, Delete) لە خشتەی ئامادەبوون
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => {
-            loadAttendanceData(); 
-        })
-        // گوێگرتن لە هەر گۆڕانکارییەک لە ڕوونکردنەوەکان (Justifications)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'justifications' }, () => {
-            loadAttendanceData();
-        })
-        // گوێگرتن لە هەر گۆڕانکارییەک لە مۆڵەتەکان (Leaves)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'leaves' }, () => {
-            loadAttendanceData();
-        })
-        .subscribe();
+    // بەکارهێنانی Debounce بۆ ئەوەی ئەگەر چەندین گۆڕانکاری پێکەوە ڕوویدا، تەنها یەکجار داتا بهێنرێتەوە
+    let syncTimeout;
+    const debouncedLoad = () => {
+        const selectedDate = document.getElementById('datePicker').value;
+        const today = new Date().toISOString().split('T')[0];
+        
+        // تەنها ئەگەر ئادمینەکە سەیری لیستی ئەمڕۆ بکات، ڕێگە بدە Sync ڕووبدات
+        if (selectedDate !== today) return;
+
+        clearTimeout(syncTimeout);
+        syncTimeout = setTimeout(() => loadAttendanceData(), 2000); // ٢ چرکە چاوەڕێ بکە
+    };
+
+    const liveSyncChannel = adminClient.channel('db_live_sync');
+
+    function startLiveSync() {
+        liveSyncChannel
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, debouncedLoad)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'justifications' }, debouncedLoad)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'leaves' }, debouncedLoad)
+            .subscribe();
+    }
+
+    // ڕاگرتنی سینک کاتێک ئادمین لە ناو لاپەڕەکە نییە بۆ کەمکردنەوەی ڕیکوێست
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            startLiveSync();
+            loadAttendanceData(); // نوێکردنەوەی داتا کاتێک دەگەڕێتەوە ناو ئەپەکە
+        } else {
+            adminClient.removeChannel(liveSyncChannel);
+        }
+    });
+
+    startLiveSync();
 
     // دانانی ڕێکەوتی ئەمڕۆ وەک دیفۆڵت
     document.getElementById('datePicker').valueAsDate = new Date();
     applyLanguage(); // دڵنیابوونەوە لە جێبەجێبوونی وەرگێڕان لە سەرەتاوە
     
-    await loadBranches();
+    await loadBranches(); // چاککراوە: فانکشنەکە لە خوارەوە زیاد کرا
+    await loadInitialProfiles(); // بارکردنی ناوی فەرمانبەران و ئادمینەکان تەنها بۆ یەکجار
     await loadAttendanceData();
     renderLeaveTypeCheckboxes(); // دروستکردنی چیک-بۆکسەکان لە کاتی بارکردن
 });
 
 async function loadBranches() {
     try {
-        const { data, error } = await adminClient.from('branches').select('*').order('branch_id');
+        const { data, error } = await adminClient.from('branches').select('branch_id, branch_name').order('branch_id');
         if (error) throw error;
         
-        // ڕیزکردنی بنکەکان بە شێوەیەکی ژمارەیی لە بچووکەوە بۆ گەورە
-        branchesCache = data ? [...data].sort((a, b) => parseInt(a.branch_id) - parseInt(b.branch_id)) : [];
-        
+        branchesCache = data || [];
         const branchOptions = document.getElementById('branchOptions');
-        branchesCache.forEach(b => {
-            const div = document.createElement('div');
-            div.className = 'option';
-            div.innerText = `${b.branch_id} | ${b.branch_name}`;
-            div.onclick = () => selectOption('branchSelect', b.branch_id, div.innerText, true);
-            branchOptions.appendChild(div);
-        });
+        if (branchOptions) {
+            branchOptions.innerHTML = ''; 
+            branchesCache.forEach(b => {
+                const div = document.createElement('div');
+                div.className = 'option';
+                div.innerText = `${b.branch_id} | ${b.branch_name}`;
+                div.onclick = () => selectOption('branchSelect', b.branch_id, div.innerText, true);
+                branchOptions.appendChild(div);
+            });
+        }
+    } catch (err) { console.error("Error loading branches:", err.message); }
+}
+
+async function loadInitialProfiles() {
+    try {
+        // پشکنین بکە ئایا داتاکە لە میمۆری مۆبایلەکەدا هەیە؟ (بۆ کەمکردنەوەی ڕیکوێست)
+        const cachedStaff = sessionStorage.getItem('staff_cache');
+        const cachedAdmins = sessionStorage.getItem('admins_cache');
+
+        if (cachedStaff && cachedAdmins) {
+            staffCache = JSON.parse(cachedStaff);
+            allAdminsCached = JSON.parse(cachedAdmins);
+            renderAdmins(allAdminsCached);
+            return;
+        }
+
+        // هێنانی ئادمینەکان و فەرمانبەران تەنها بۆ یەکجار لە کاتی کردنەوەی لاپەڕەکە
+        const [adminsRes, staffRes] = await Promise.all([
+            adminClient.from('profiles').select('id, full_name, role, branch_id, email, device_id, branches:branch_id(branch_id, branch_name)').eq('role', 'admin').order('full_name'),
+            adminClient.from('profiles').select('id, full_name, role, branch_id, email, device_id, branches:branch_id(branch_id, branch_name)').neq('role', 'admin').order('full_name')
+        ]);
+
+        allAdminsCached = adminsRes.data || [];
+        staffCache = staffRes.data || [];
+        
+        // پاشەکەوتکردن بۆ ئەوەی ڕیفرێش ڕیکوێست دروست نەکات
+        sessionStorage.setItem('staff_cache', JSON.stringify(staffCache));
+        sessionStorage.setItem('admins_cache', JSON.stringify(allAdminsCached));
+
+        renderAdmins(allAdminsCached);
     } catch (err) {
-        console.error("Error loading branches:", err.message);
+        console.error("Error loading initial profiles:", err.message);
     }
 }
 
 async function loadAttendanceData() {
     const listDiv = document.getElementById('attendanceList');
     const date = document.getElementById('datePicker').value;
-   const branchFilter = currentFilters.branch;
 
     listDiv.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i> باردەکرێت...</div>';
 
-    // هێنانی ئامادەبووان و بەستنەوەی بە پڕۆفایل و بنکە
     try {
+        const branchFilter = currentFilters.branch;
+        // تەنها ئەو داتایانە بهێنە کە بە بەردەوام دەگۆڕێن
         let query = adminClient
             .from('attendance')
-            .select('*, profiles:user_id!inner(full_name, branch_id)')
-            // بەکارهێنانی Offsetی +03:00 بۆ عێراق لە ناو SQL query
+            .select('user_id, check_in_time, check_out_time, status')
             .gte('check_in_time', `${date}T00:00:00+03:00`)
             .lte('check_in_time', `${date}T23:59:59+03:00`);
 
-        const { data, error } = await query;
+        const [attRes, justRes, leavesRes] = await Promise.all([
+            query,
+            adminClient.from('justifications').select('user_id, reason').eq('date', date),
+            // ئۆپتیمایزکردن: تەنها ئەو مۆڵەتانە بهێنە کە لەم ڕێکەوتەدا چالاکن
+            adminClient.from('leaves').select('id, user_id, reason, start_date, end_date, start_time, end_time')
+                .lte('start_date', date)
+                .gte('end_date', date)
+        ]);
 
-        if (error) {
-            throw new Error(`Attendance: ${error.message}`);
-        }
+        if (attRes.error) throw attRes.error;
+        
+        attendanceCache = attRes.data || [];
+        leavesCache = leavesRes.data || [];
+        justificationsCache = justRes.data || [];
 
-    // هێنانی ڕوونکردنەوەکان بە لیست و پشکنینی هەڵە
-    const { data: justs, error: justError } = await adminClient
-        .from('justifications')
-        .select('user_id, reason')
-        .eq('date', date);
+        // فلتەرکردنی ستاف لەسەر ئاستی کڵایێنت نەک داتابەیس بۆ کەمکردنەوەی ڕیکوێست
+        const filteredStaff = branchFilter === 'all' 
+            ? staffCache 
+            : staffCache.filter(s => s.branch_id === branchFilter);
 
-    if (justError) throw new Error(`Justifications: ${justError.message}`);
-
-    // هێنانی مۆڵەتەکان
-    const { data: leaves, error: leavesError } = await adminClient
-        .from('leaves')
-        .select('*');
-    
-    if (leavesError) throw new Error(`Leaves: ${leavesError.message}`);
-
-    // هێنانی ئادمینەکان بە جیا بۆ ئەوەی هەمیشە هەموویان دیار بن بەبێ گوێدانە فلتەری بنکە
-    const { data: admins, error: adminError } = await adminClient
-        .from('profiles')
-        .select('*, branches:branch_id(branch_id, branch_name)')
-        .eq('role', 'admin')
-        .order('full_name');
-
-    if (adminError) throw new Error(`Admins: ${adminError.message}`);
-
-    // هێنانی فەرمانبەران بەپێی فلتەری بنکە بۆ لیستی ئامادەبوون
-    let staffQuery = adminClient
-        .from('profiles')
-        .select('*, branches:branch_id(branch_id, branch_name)')
-        .neq('role', 'admin');
-
-    if (branchFilter !== 'all') staffQuery = staffQuery.eq('branch_id', branchFilter);
-    
-    const { data: staff, error: staffError } = await staffQuery.order('full_name');
-
-    if (staffError) throw new Error(`Staff: ${staffError.message}`);
-
-        attendanceCache = data || [];
-        staffCache = staff || [];
-        leavesCache = leaves || [];
-        justificationsCache = justs || [];
-
-        allAdminsCached = admins; // پاشەکەوتکردنی لیستەکە بۆ بەکارهێنان لە پرێزنس
-        renderAdmins(admins);
         document.getElementById('justificationCount').innerText = justificationsCache.length;
-        applyFiltersLocally(); // بانگکردنی فلتەرەکان
+        renderAttendance(attendanceCache, filteredStaff);
     } catch (err) {
         console.error("Global load error:", err);
         listDiv.innerHTML = `<div class="error-msg"><i class="fas fa-exclamation-triangle"></i> هەڵە: ${err.message}</div>`;
