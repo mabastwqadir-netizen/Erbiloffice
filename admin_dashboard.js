@@ -12,6 +12,7 @@ let branchesCache = []; // پاشەکەوتکردنی لیستی هەموو بن
 let selectedBranchInModal = null; // بۆ هەڵگرتنی بنکەی دیاریکراو لە ناو مۆداڵ
 let selectedLeaveStartDate = null;
 let selectedLeaveEndDate = null;
+let lastFetchTimestamp = 0; // بۆ ڕێگری لە نوێکردنەوەی زۆر خێرا
 let selectedLeaveReasonInModal = null;
 let selectedLeaveStartTime = null;
 let selectedLeaveEndTime = null;
@@ -87,48 +88,75 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // نوێکردنەوەی داتا تەنها کاتێک ئادمین دەگەڕێتەوە ناو تابەکە
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            loadAttendanceData(); // تەنها کاتێک ئادمین دەگەڕێتەوە ناو تابەکە، داتاکان نوێ بکەرەوە
+        const now = Date.now();
+        // تەنها ئەگەر زیاتر لە ٢ خولەک تێپەڕ بووبێت بەسەر دواین نوێکردنەوە، داتا باربکەرەوە
+        if (document.visibilityState === 'visible' && (now - lastFetchTimestamp > 120000)) {
+            loadAttendanceData();
         }
     });
 
     // دانانی ڕێکەوتی ئەمڕۆ وەک دیفۆڵت
     document.getElementById('datePicker').valueAsDate = new Date();
     applyLanguage(); // دڵنیابوونەوە لە جێبەجێبوونی وەرگێڕان لە سەرەتاوە
+
+    // پاککردنەوەی کاشی ئەمڕۆ تەنها لە کاتی ڕیفرێشکردنی لاپەڕەکە بۆ ئەوەی هەمیشە داتای نوێ بێت
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Baghdad' }).format(new Date());
+    localStorage.removeItem(`admin_att_${todayStr}`);
     
     await loadBranches(); // چاککراوە: فانکشنەکە لە خوارەوە زیاد کرا
     await loadInitialProfiles(); // بارکردنی ناوی فەرمانبەران و ئادمینەکان تەنها بۆ یەکجار
-    await loadAttendanceData();
+    await loadAttendanceData(); // بارکردنی داتای سەرەتایی بە کاشەوە
     renderLeaveTypeCheckboxes(); // دروستکردنی چیک-بۆکسەکان لە کاتی بارکردن
+
+    // زیادکردنی لیسنەر بۆ گۆڕینی ڕێکەوت بۆ ئەوەی داتا لە کاشەوە بهێنێت
+    document.getElementById('datePicker').addEventListener('change', () => {
+        loadAttendanceData();
+    });
 });
 
 async function loadBranches() {
     try {
+        const cachedBranches = localStorage.getItem('branches_cache');
+        if (cachedBranches) {
+            branchesCache = JSON.parse(cachedBranches);
+            renderBranchDropdown();
+        }
+
         const { data, error } = await adminClient.from('branches').select('branch_id, branch_name').order('branch_id');
         if (error) throw error;
         
         branchesCache = data || [];
-        const branchOptions = document.getElementById('branchOptions');
-        if (branchOptions) {
-            branchOptions.innerHTML = ''; 
-            branchesCache.forEach(b => {
-                const div = document.createElement('div');
-                div.className = 'option';
-                div.innerText = `${b.branch_id} | ${b.branch_name}`;
-                div.onclick = () => selectOption('branchSelect', b.branch_id, div.innerText, true);
-                branchOptions.appendChild(div);
-            });
-        }
-    } catch (err) { console.error("Error loading branches:", err.message); }
+        localStorage.setItem('branches_cache', JSON.stringify(branchesCache));
+        renderBranchDropdown();
+    } catch (err) { 
+        console.error("Error loading branches:", err.message); 
+    }
+}
+
+function renderBranchDropdown() {
+    const branchOptions = document.getElementById('branchOptions');
+    if (branchOptions) {
+        branchOptions.innerHTML = ''; 
+        branchesCache.forEach(b => {
+            const div = document.createElement('div');
+            div.className = 'option';
+            div.innerText = `${b.branch_id} | ${b.branch_name}`;
+            div.onclick = () => selectOption('branchSelect', b.branch_id, div.innerText, true);
+            branchOptions.appendChild(div);
+        });
+    }
 }
 
 async function loadInitialProfiles() {
     try {
-        // پشکنین بکە ئایا داتاکە لە میمۆری مۆبایلەکەدا هەیە؟ (بۆ کەمکردنەوەی ڕیکوێست)
-        const cachedStaff = sessionStorage.getItem('staff_cache');
-        const cachedAdmins = sessionStorage.getItem('admins_cache');
+        // گۆڕینی sessionStorage بۆ localStorage بۆ کاشکردنی هەمیشەیی
+        const cachedStaff = localStorage.getItem('staff_cache');
+        const cachedAdmins = localStorage.getItem('admins_cache');
+        const lastProfileSync = localStorage.getItem('last_profile_sync');
+        const now = Date.now();
 
-        if (cachedStaff && cachedAdmins) {
+        // تەنها ئەگەر داتاکە هەبێت و کەمتر لە یەک سەعات (٣٦٠٠٠٠٠ میلی چرکە) تێپەڕ بووبێت، کاشەکە بەکاربهێنە
+        if (cachedStaff && cachedAdmins && lastProfileSync && (now - lastProfileSync < 3600000)) {
             staffCache = JSON.parse(cachedStaff);
             allAdminsCached = JSON.parse(cachedAdmins);
             renderAdmins(allAdminsCached);
@@ -144,9 +172,10 @@ async function loadInitialProfiles() {
         allAdminsCached = adminsRes.data || [];
         staffCache = staffRes.data || [];
         
-        // پاشەکەوتکردن بۆ ئەوەی ڕیفرێش ڕیکوێست دروست نەکات
-        sessionStorage.setItem('staff_cache', JSON.stringify(staffCache));
-        sessionStorage.setItem('admins_cache', JSON.stringify(allAdminsCached));
+        // نوێکردنەوەی کاش
+        localStorage.setItem('staff_cache', JSON.stringify(staffCache));
+        localStorage.setItem('admins_cache', JSON.stringify(allAdminsCached));
+        localStorage.setItem('last_profile_sync', now);
 
         renderAdmins(allAdminsCached);
     } catch (err) {
@@ -154,11 +183,33 @@ async function loadInitialProfiles() {
     }
 }
 
-async function loadAttendanceData() {
+async function loadAttendanceData(forceRefresh = false) {
     const listDiv = document.getElementById('attendanceList');
     const date = document.getElementById('datePicker').value;
+    const cacheKey = `admin_att_${date}`;
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Baghdad' }).format(new Date());
+
+    // ١. پشکنینی کاش بۆ هەموو ڕۆژەکان (ئێستا ئەمڕۆش دەگرێتەوە بۆ کەمکردنەوەی ڕیکوێست لە کاتی گۆڕینی ڕێکەوت)
+    if (!forceRefresh) {
+        const cachedData = localStorage.getItem(cacheKey);
+        if (cachedData) {
+            const parsed = JSON.parse(cachedData);
+            attendanceCache = parsed.attendance || [];
+            leavesCache = parsed.leaves || [];
+            justificationsCache = parsed.justifications || [];
+            
+            const filteredStaff = currentFilters.branch === 'all' 
+                ? staffCache 
+                : staffCache.filter(s => s.branch_id === currentFilters.branch);
+
+            document.getElementById('justificationCount').innerText = justificationsCache.length;
+            renderAttendance(attendanceCache, filteredStaff);
+            return; // کۆتایی لێرە ئەگەر لە کاشدا هەبوو
+        }
+    }
 
     listDiv.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i> باردەکرێت...</div>';
+    lastFetchTimestamp = Date.now();
 
     try {
         const branchFilter = currentFilters.branch;
@@ -183,6 +234,15 @@ async function loadAttendanceData() {
         attendanceCache = attRes.data || [];
         leavesCache = leavesRes.data || [];
         justificationsCache = justRes.data || [];
+
+        // ٢. پاشەکەوتکردن لە کاش بۆ بەکارهێنانەوە
+        const dataToCache = {
+            attendance: attendanceCache,
+            leaves: leavesCache,
+            justifications: justificationsCache,
+            timestamp: Date.now()
+        };
+        localStorage.setItem(cacheKey, JSON.stringify(dataToCache));
 
         // فلتەرکردنی ستاف لەسەر ئاستی کڵایێنت نەک داتابەیس بۆ کەمکردنەوەی ڕیکوێست
         const filteredStaff = branchFilter === 'all' 

@@ -1139,8 +1139,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // پشکنینی ناسنامە - دەبێت ئەمە یەکەمین کار بێت بۆ ڕێگریکردن لە بینینی ناوەڕۆک بەبێ لۆگین
-    const { data: { user }, error } = await client.auth.getUser();
+    // ئۆپتیمایزکردن: بەکارهێنانی getSession لەبری getUser بۆ خێرایی و کەمکردنەوەی ڕیکوێست
+    const { data: { session }, error } = await client.auth.getSession();
+    const user = session?.user;
+
     if (error || !user) {
         window.location.href = 'index.html';
         return;
@@ -1521,27 +1523,71 @@ async function viewSelectedStaffAttendance(clickedBtn) {
         return;
     }
 
-    const staffIdToView = selectedStaffId; // جێگیرکردنی ئایدی فەرمانبەر
-    
+    const staffId = selectedStaffId;
     const btn = clickedBtn || document.querySelector('.sub-admin-panel .history-btn');
     const originalHTML = btn.innerHTML;
     btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${translations[currentLang].waitText}`;
     
-    const { data: attendance } = await client
-        .from('attendance')
-        .select('check_in_time, check_out_time')
-        .eq('user_id', selectedStaffId);
-    
-    const { data: leaves } = await client
-        .from('leaves')
-        .select('id, start_date, end_date, reason, start_time, end_time')
-        .eq('user_id', selectedStaffId);
+    const cacheKeyAtt = `att_history_${staffId}`;
+    const cacheKeyLeaves = `leaves_history_${staffId}`;
 
-    btn.innerHTML = originalHTML;
-    if (attendance) {
-        staffAttendanceData = attendance;
-        staffLeaveData = leaves || [];
-        renderStaffCalendar(attendance, staffIdToView);
+    let cachedAtt = JSON.parse(localStorage.getItem(cacheKeyAtt) || '[]');
+    let cachedLeaves = JSON.parse(localStorage.getItem(cacheKeyLeaves) || '[]');
+
+    let lastSyncDate;
+    const now = Date.now();
+    const lastFullSync = localStorage.getItem(`full_sync_staff_${staffId}`);
+
+    if (!lastFullSync || (now - lastFullSync > 86400000)) {
+        lastSyncDate = "2000-01-01";
+        localStorage.setItem(`full_sync_staff_${staffId}`, now);
+    } else if (cachedAtt.length > 0) {
+        lastSyncDate = cachedAtt.reduce((max, item) => {
+            const d = item.check_in_time.split('T')[0];
+            return d > max ? d : max;
+        }, "2000-01-01");
+    } else {
+        const d = new Date();
+        d.setDate(d.getDate() - 60);
+        lastSyncDate = d.toISOString().split('T')[0];
+    }
+
+    try {
+        const [attRes, leaveRes] = await Promise.all([
+            client.from('attendance').select('check_in_time, check_out_time').eq('user_id', staffId).gte('check_in_time', `${lastSyncDate}T00:00:00`),
+            client.from('leaves').select('id, start_date, end_date, reason, start_time, end_time').eq('user_id', staffId).gte('end_date', lastSyncDate)
+        ]);
+
+        if (!attRes.error && attRes.data) {
+            const cleanAttCache = cachedAtt.filter(item => item.check_in_time.split('T')[0] < lastSyncDate);
+            const attMap = new Map();
+            cleanAttCache.forEach(item => attMap.set(item.check_in_time.split('T')[0], item));
+            attRes.data.forEach(item => attMap.set(item.check_in_time.split('T')[0], item));
+            staffAttendanceData = Array.from(attMap.values());
+            localStorage.setItem(cacheKeyAtt, JSON.stringify(staffAttendanceData));
+        } else {
+            staffAttendanceData = cachedAtt;
+        }
+
+        if (!leaveRes.error && leaveRes.data) {
+            const cleanLeaveCache = cachedLeaves.filter(l => l.end_date < lastSyncDate);
+            const leaveMap = new Map();
+            cleanLeaveCache.forEach(l => leaveMap.set(l.id, l));
+            leaveRes.data.forEach(l => leaveMap.set(l.id, l));
+            staffLeaveData = Array.from(leaveMap.values());
+            localStorage.setItem(cacheKeyLeaves, JSON.stringify(staffLeaveData));
+        } else {
+            staffLeaveData = cachedLeaves;
+        }
+
+        btn.innerHTML = originalHTML;
+        renderStaffCalendar(staffAttendanceData, staffId);
+    } catch (err) {
+        console.error("Fetch staff history failed:", err);
+        staffAttendanceData = cachedAtt;
+        staffLeaveData = cachedLeaves;
+        btn.innerHTML = originalHTML;
+        renderStaffCalendar(staffAttendanceData, staffId);
     }
 }
 
@@ -1768,19 +1814,70 @@ let attendanceData = [];
 
 // ١. وەرگرتنی هەموو تۆمارەکانی فەرمانبەر لە سوپابەیس
 async function fetchAttendance() {
-    const { data: attendance, error: attError } = await client
-        .from('attendance')
-        .select('check_in_time, check_out_time')
-        .eq('user_id', currentUser.id);
+    const cacheKeyAtt = `att_history_${currentUser.id}`;
+    const cacheKeyLeaves = `leaves_history_${currentUser.id}`;
 
-    const { data: leaves, error: leaveError } = await client
-        .from('leaves')
-        .select('start_date, end_date, reason, start_time, end_time')
-        .eq('user_id', currentUser.id);
+    let cachedAtt = JSON.parse(localStorage.getItem(cacheKeyAtt) || '[]');
+    let cachedLeaves = JSON.parse(localStorage.getItem(cacheKeyLeaves) || '[]');
 
-    if (!attError && !leaveError) {
-        attendanceData = attendance;
-        userLeaves = leaves || [];
+    let lastSyncDate;
+
+    // ١. نوێکردنەوەی تەواو ٢٤ سەعات جارێک بۆ دڵنیابوون لەوەی مۆڵەتە سڕاوەکان لە کاش دەسڕێنەوە
+    const lastFullSync = localStorage.getItem(`full_sync_${currentUser.id}`);
+    const now = Date.now();
+    const ONE_DAY = 86400000;
+
+    if (!lastFullSync || (now - lastFullSync > ONE_DAY)) {
+        lastSyncDate = "2000-01-01"; // هێنانی هەموو مێژوو بۆ پشکنینی سڕینەوەکان
+        localStorage.setItem(`full_sync_${currentUser.id}`, now);
+    } else if (cachedAtt.length > 0) {
+        lastSyncDate = cachedAtt.reduce((max, item) => {
+            const d = item.check_in_time.split('T')[0];
+            return d > max ? d : max;
+        }, "2000-01-01");
+    } else {
+        const d = new Date();
+        d.setDate(d.getDate() - 60);
+        lastSyncDate = d.toISOString().split('T')[0];
+    }
+
+    try {
+        const [attRes, leaveRes] = await Promise.all([
+            client.from('attendance').select('check_in_time, check_out_time').eq('user_id', currentUser.id).gte('check_in_time', `${lastSyncDate}T00:00:00`),
+            client.from('leaves').select('id, start_date, end_date, reason, start_time, end_time').eq('user_id', currentUser.id).gte('end_date', lastSyncDate)
+        ]);
+
+        if (!attRes.error && attRes.data) {
+            // سڕینەوەی ئەو تۆمارانەی لە ناو مەودای Sync دان لە ناو کاش (بۆ چارەسەری سڕینەوە لەلایەن ئادمین)
+            const cleanAttCache = cachedAtt.filter(item => item.check_in_time.split('T')[0] < lastSyncDate);
+
+            const attMap = new Map();
+            cleanAttCache.forEach(item => attMap.set(item.check_in_time.split('T')[0], item));
+            attRes.data.forEach(item => attMap.set(item.check_in_time.split('T')[0], item));
+            attendanceData = Array.from(attMap.values());
+            localStorage.setItem(cacheKeyAtt, JSON.stringify(attendanceData));
+        } else {
+            attendanceData = cachedAtt;
+        }
+
+        if (!leaveRes.error && leaveRes.data) {
+            // سڕینەوەی ئەو مۆڵەتانەی لە ناو مەودای نوێکردنەوەدان لە ناو کاش
+            const cleanLeaveCache = cachedLeaves.filter(l => l.end_date < lastSyncDate);
+
+            const leaveMap = new Map();
+            cleanLeaveCache.forEach(l => leaveMap.set(l.id, l));
+            leaveRes.data.forEach(l => leaveMap.set(l.id, l));
+            userLeaves = Array.from(leaveMap.values());
+            localStorage.setItem(cacheKeyLeaves, JSON.stringify(userLeaves));
+        } else {
+            userLeaves = cachedLeaves;
+        }
+
+        renderCalendar();
+    } catch (err) {
+        console.error("Fetch history failed:", err);
+        attendanceData = cachedAtt;
+        userLeaves = cachedLeaves;
         renderCalendar();
     }
 }
@@ -1991,6 +2088,22 @@ function showDayDetails(record, dateStr) {
 async function fetchJustification(dateStr) {
     const input = document.getElementById('justificationInput');
     const saveBtn = document.getElementById('saveJustBtn');
+    const cacheKey = `just_${currentUser.id}_${dateStr}`;
+
+    // ١. هەوڵدان بۆ هێنانی ڕوونکردنەوە لە کاش
+    let cachedJustification = localStorage.getItem(cacheKey);
+    if (cachedJustification) {
+        const data = JSON.parse(cachedJustification);
+        input.value = data.reason;
+        input.readOnly = true;
+        saveBtn.classList.add('btn-justification-edit');
+        saveBtn.innerHTML = `<i class="fas fa-edit"></i> <span>${translations[currentLang].editJustification}</span>`;
+        if (document.getElementById('deleteJustBtn')) document.getElementById('deleteJustBtn').style.display = 'flex';
+        input.placeholder = translations[currentLang].justificationPlaceholder;
+        return; // گەڕانەوە چونکە لە کاشدا دۆزرایەوە
+    }
+
+    // ٢. ئەگەر لە کاشدا نەبوو، لە سێرڤەر داوای بکە
     const { data } = await client
         .from('justifications')
         .select('reason')
@@ -2004,12 +2117,14 @@ async function fetchJustification(dateStr) {
         saveBtn.classList.add('btn-justification-edit');
         saveBtn.innerHTML = `<i class="fas fa-edit"></i> <span>${translations[currentLang].editJustification}</span>`;
         if (document.getElementById('deleteJustBtn')) document.getElementById('deleteJustBtn').style.display = 'flex';
+        localStorage.setItem(cacheKey, JSON.stringify(data)); // پاشەکەوتکردن لە کاش
     } else {
         input.value = "";
         input.readOnly = false; // کراوە بێت ئەگەر ڕوونکردنەوە نەبوو
         saveBtn.classList.remove('btn-justification-edit');
         saveBtn.innerHTML = `<i class="fas fa-paper-plane"></i> <span>${translations[currentLang].saveJustification}</span>`;
         if (document.getElementById('deleteJustBtn')) document.getElementById('deleteJustBtn').style.display = 'none';
+        localStorage.removeItem(cacheKey); // دڵنیابوونەوە لەوەی کاشی بەتاڵ نییە
     }
     
     input.placeholder = translations[currentLang].justificationPlaceholder;
@@ -2054,6 +2169,9 @@ async function submitJustification() {
         saveBtn.style.color = "white";
         saveBtn.innerHTML = `<i class="fas fa-check-circle"></i> <span>${successMsg}</span>`;
 
+        // نوێکردنەوەی کاش
+        localStorage.setItem(`just_${currentUser.id}_${currentDetailDate}`, JSON.stringify({ reason: reason }));
+
         setTimeout(() => {
             // گەڕاندنەوەی دوگمەکە بۆ دۆخی ئاسایی و دووبارە قفڵکردنەوەی تێکستەکە
             saveBtn.disabled = false;
@@ -2094,6 +2212,9 @@ async function deleteJustification() {
     if (!error) {
         updateStatus(translations[currentLang].deleteSuccess, 'success');
         fetchJustification(currentDetailDate); // دووبارە ڕێکخستنەوەی مۆداڵەکە بۆ دۆخی بەتاڵ
+
+        // سڕینەوە لە کاش
+        localStorage.removeItem(`just_${currentUser.id}_${currentDetailDate}`);
     } else {
         alert("Error: " + error.message);
         delBtn.disabled = false;
