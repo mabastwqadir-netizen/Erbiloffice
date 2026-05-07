@@ -85,41 +85,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-    // --- Modern Real-time Synchronizer ---
-    // بەکارهێنانی Debounce بۆ ئەوەی ئەگەر چەندین گۆڕانکاری پێکەوە ڕوویدا، تەنها یەکجار داتا بهێنرێتەوە
-    let syncTimeout;
-    const debouncedLoad = () => {
-        const selectedDate = document.getElementById('datePicker').value;
-        const today = new Date().toISOString().split('T')[0];
-        
-        // تەنها ئەگەر ئادمینەکە سەیری لیستی ئەمڕۆ بکات، ڕێگە بدە Sync ڕووبدات
-        if (selectedDate !== today) return;
-
-        clearTimeout(syncTimeout);
-        syncTimeout = setTimeout(() => loadAttendanceData(), 2000); // ٢ چرکە چاوەڕێ بکە
-    };
-
-    const liveSyncChannel = adminClient.channel('db_live_sync');
-
-    function startLiveSync() {
-        liveSyncChannel
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, debouncedLoad)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'justifications' }, debouncedLoad)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'leaves' }, debouncedLoad)
-            .subscribe();
-    }
-
-    // ڕاگرتنی سینک کاتێک ئادمین لە ناو لاپەڕەکە نییە بۆ کەمکردنەوەی ڕیکوێست
+    // نوێکردنەوەی داتا تەنها کاتێک ئادمین دەگەڕێتەوە ناو تابەکە
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
-            startLiveSync();
-            loadAttendanceData(); // نوێکردنەوەی داتا کاتێک دەگەڕێتەوە ناو ئەپەکە
-        } else {
-            adminClient.removeChannel(liveSyncChannel);
+            loadAttendanceData(); // تەنها کاتێک ئادمین دەگەڕێتەوە ناو تابەکە، داتاکان نوێ بکەرەوە
         }
     });
-
-    startLiveSync();
 
     // دانانی ڕێکەوتی ئەمڕۆ وەک دیفۆڵت
     document.getElementById('datePicker').valueAsDate = new Date();

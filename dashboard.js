@@ -593,7 +593,7 @@ function startTracking() {
     );
 }
 
-// یەکخستنی لیسنەرەکانی Visibility بۆ پاراستنی ڕیکوێست و باتری
+// لیسنەری Visibility بۆ پاراستنی ڕیکوێست و باتری
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
         if (watchID) {

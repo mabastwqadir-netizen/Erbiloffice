@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ihec-inout-v1.4.30';
+const CACHE_NAME = 'ihec-inout-v1.4.31';
 const ASSETS = [
   '/',
   '/index.html',
@@ -22,6 +22,16 @@ const ASSETS = [
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
+});
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))
+      );
+    })
+  );
 });
 
 self.addEventListener('fetch', (e) => {
