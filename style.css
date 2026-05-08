@@ -386,11 +386,6 @@ body:has(.dashboard-container) {
     transition: all 0.3s ease;
 }
 
-.employee-profile-card:hover {
-    box-shadow: 0 12px 25px rgba(var(--primary-rgb), 0.15);
-    transform: translateY(-2px);
-}
-
 .employee-profile-card #welcomeUser {
     font-size: 1.4rem; /* فۆنتێکی گەورەتر بۆ ناو */
     font-weight: 900; /* زۆر تۆخ */
@@ -1438,9 +1433,37 @@ input[type="date"]:focus::-webkit-calendar-picker-indicator {
 }
 
 .history-btn {
-    font-size: 0.9rem !important;
-    padding: 10px !important;
-    box-shadow: none !important;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+    color: #ffffff !important;
+    border: none !important;
+    margin: 25px auto 10px !important;
+    border-radius: 20px !important;
+    font-weight: 800 !important;
+    height: 56px;
+    font-size: 0.92rem !important;
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* هەستی کلیک کردن لە مۆبایل */
+.history-btn:active {
+    transform: scale(0.96) translateY(2px) !important;
+    box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2) !important;
+    filter: brightness(0.9);
+}
+
+.history-btn i {
+    font-size: 1.2rem;
+    margin-left: 8px;
+    transition: transform 0.2s ease;
+}
+
+.history-btn:active i {
+    transform: rotate(-10deg) scale(1.1);
 }
 
 .calendar-container {
@@ -1514,13 +1537,6 @@ input[type="date"]:focus::-webkit-calendar-picker-indicator {
     background: var(--primary) !important;
     color: white !important;
     font-weight: bold;
-}
-
-.history-btn {
-    background: transparent;
-    color: var(--primary);
-    border: 1.5px solid var(--primary);
-    margin-top: 15px !important;
 }
 
 /* Modern Compact Location */

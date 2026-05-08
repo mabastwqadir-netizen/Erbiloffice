@@ -8,7 +8,7 @@ const CHECKOUT_MINUTE_LIMIT = 30;
 // ڕێکخستنی کاتی ڕێپێدراو بۆ ئامادەبوون (بۆ نموونە 7:30 بەیانی تا 12:00 نیوەڕۆ)
 const CHECKIN_START_HOUR = 8;
 const CHECKIN_START_MINUTE = 0;
-const CHECKIN_END_HOUR = 12;
+const CHECKIN_END_HOUR = 24;
 const CHECKIN_END_MINUTE = 0;
 
 let client;
