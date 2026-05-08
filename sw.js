@@ -22,7 +22,6 @@ const ASSETS = [
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // هەر فایلێک بە جیا کاش بکە - ئەگەر یەکێک شکستی هێنا، ئەوانی تر کاش دەبن
       return Promise.allSettled(
         ASSETS.map((url) =>
           cache.add(url).catch((err) => {
@@ -46,22 +45,25 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  // نێتوۆرک سەرەتا، کاش دواتم
   e.respondWith(
-    caches.match(e.request).then((res) => {
-      if (res) return res;
-      return fetch(e.request).then((networkRes) => {
-        // فایلە نوێیەکانیش کاش بکە بۆ نۆرەی داهاتوو
+    fetch(e.request)
+      .then((networkRes) => {
+        // ئەگەر سەرکەوتوو بوو، کاشیشی بکە
         if (networkRes.ok) {
           const clone = networkRes.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
         }
         return networkRes;
-      }).catch(() => {
-        // فەیڵباک: ئەگەر نێتوۆرک نەبوو، index.html پیشان بدە
-        if (e.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
-      });
-    })
+      })
+      .catch(() => {
+        // ئەگەر نێتوۆرک نەبوو، لە کاشەوە بگەڕێنە
+        return caches.match(e.request).then((res) => {
+          if (res) return res;
+          if (e.request.mode === 'navigate') {
+            return caches.match('/index.html');
+          }
+        });
+      })
   );
 });
