@@ -167,6 +167,7 @@ async function loadInitialProfiles() {
 
         allAdminsCached = adminsRes.data || [];
         staffCache = staffRes.data || [];
+        const now = Date.now();
         
         // نوێکردنەوەی کاش
         localStorage.setItem('staff_cache', JSON.stringify(staffCache));

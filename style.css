@@ -91,10 +91,16 @@ body {
     padding-right: env(safe-area-inset-right);
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* گۆڕین بۆ سەرەتا بۆ ڕێگری لە دروستبوونی بۆشایی لە کاتی سکڕۆڵ */
-    min-height: 100%;
+   align-items: center; /* ناوەندکردنی ستوونی بۆ لاپەڕەی لۆگین */
+    min-height: 100vh;
     transition: background 0.5s ease, opacity 0.4s ease, transform 0.4s ease;
     overflow-x: hidden;
+}
+
+/* تەنها لەو لاپەڕانەی داشبۆردیان تێدایە، با ناوەڕۆک لە سەرەوە دەست پێ بکات بۆ هەموو شاشەکان */
+body:has(.dashboard-container) {
+    align-items: flex-start;
+    padding-bottom: 40px; /* بۆشاییەک لە خوارەوە بۆ کاتی سکڕۆڵ */
 }
 
 /* ئەنیمەیشنی بریقەی باکگراوند */
@@ -254,6 +260,11 @@ body {
     background: rgba(0, 98, 255, 0.05);
 }
 
+/* سپیکردنی باکگراوەندی دوگمەی سێتینگ و تێم لە کاتی هۆڤەر */
+.theme-toggle-btn:hover, .settings-toggle-btn:hover {
+    background: #ffffff !important;
+}
+
 .settings-toggle-btn {
     margin-left: 0; /* لابردنی مارجین چونکە ئێستا لەناو دیڤێکی Flex دایە */
 }
@@ -393,7 +404,7 @@ body {
 }
 
 .employee-profile-card #userRole {
-    font-size: 0.85rem; /* فۆنتێکی بچووکتر بۆ پلە/بنکە */
+    font-size: 0.8rem; /* فۆنتێکی بچووکتر بۆ پلە/بنکە */
     font-weight: 600;
     color: var(--text-sub); /* ڕەنگێکی کاڵتر */
     line-height: 1.4;
@@ -1181,18 +1192,11 @@ input:focus ~ .floating-label {
         width: 100%; /* گەڕانەوە بۆ باری بنەڕەتی بۆ ئەوەی کار لە داشبۆرد نەکات */
     }
 
-    /* تەنها ئەو کاردەی لۆگین کە ڕاستەوخۆ لەناو body دایە (وەک لاپەڕەی چوونەژوورەوە) دوور بکەوێتەوە لە لێوارەکان */
-    body > .login-card {
-        width: calc(100% - 32px);
-        margin: 0 16px;
-    }
-
-    .top-controls {
-        top: 10px;
-        right: 10px;
-        gap: 8px;
-    }
-
+    /* لادانی مارجینی سەرەوە بۆ ئەوەی فڵێکس بە دروستی ناوەندی بکات */
+body > .login-card {
+    margin-top: 0;
+}
+     
 .calendar-nav-btn {
     padding: 4px 8px !important;
     font-size: 0.8rem !important;
@@ -1241,7 +1245,6 @@ input[type="date"]:focus::-webkit-calendar-picker-indicator {
     max-width: 450px;
     margin: 80px auto 0;
     padding: 0 15px;
-    animation: fadeIn 0.8s ease-out;
 }
 
 .status-card {
@@ -1346,6 +1349,21 @@ input[type="date"]:focus::-webkit-calendar-picker-indicator {
     box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3) !important;
     display: none; /* Default hidden */
 }
+
+/* --- Staggered Fade-in Animation for Dashboard Cards --- */
+.dashboard-container .employee-profile-card,
+.dashboard-container .status-card,
+.dashboard-container .location-card-mini,
+.dashboard-container .checkin-btn {
+    opacity: 0;
+    animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.dashboard-container .employee-profile-card { animation-delay: 0.1s; }
+.dashboard-container .status-card { animation-delay: 0.2s; }
+.dashboard-container .location-card-mini { animation-delay: 0.3s; }
+.dashboard-container #checkinBtn, .dashboard-container #checkoutBtn { animation-delay: 0.4s; }
+.dashboard-container .history-btn { animation-delay: 0.5s; }
 
 /* Modern Error Message for Login */
 #error-msg {
