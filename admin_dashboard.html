@@ -215,5 +215,10 @@
     <script src="lang.js"></script>
     <script src="script.js"></script>
     <script src="admin_dashboard.js"></script>
+    <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+</script>
 </body>
 </html>

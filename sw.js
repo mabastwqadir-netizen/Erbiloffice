@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ihec-inout-v1.4.32';
+const CACHE_NAME = 'ihec-inout-v1.4.34';
 const ASSETS = [
   '/',
   '/index.html',
@@ -21,7 +21,16 @@ const ASSETS = [
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) => {
+      // هەر فایلێک بە جیا کاش بکە - ئەگەر یەکێک شکستی هێنا، ئەوانی تر کاش دەبن
+      return Promise.allSettled(
+        ASSETS.map((url) =>
+          cache.add(url).catch((err) => {
+            console.warn('Failed to cache:', url, err);
+          })
+        )
+      );
+    })
   );
   self.skipWaiting();
 });
@@ -40,7 +49,15 @@ self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then((res) => {
       if (res) return res;
-      return fetch(e.request).catch(() => {
+      return fetch(e.request).then((networkRes) => {
+        // فایلە نوێیەکانیش کاش بکە بۆ نۆرەی داهاتوو
+        if (networkRes.ok) {
+          const clone = networkRes.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+        }
+        return networkRes;
+      }).catch(() => {
+        // فەیڵباک: ئەگەر نێتوۆرک نەبوو، index.html پیشان بدە
         if (e.request.mode === 'navigate') {
           return caches.match('/index.html');
         }
