@@ -433,6 +433,9 @@ function updateComplianceUI(record) {
         card.className = 'compliance-card';
         if (statusCard) statusCard.after(card);
     }
+    
+    // بۆ شاردنەوەی کاتی ئەم هێڵەی خوارەوە زیاد بکە
+    card.style.display = 'none'; 
 
     const { total, inPercent, outPercent } = calculateComplianceScore(record);
     
@@ -2020,7 +2023,8 @@ function showDayDetails(record, dateStr) {
         detailOut.style.background = "rgba(239, 68, 68, 0.05)";
         detailOut.innerHTML = `<i class="fas fa-sign-out-alt" style="color: #ef4444;"></i> <div>${translations[currentLang].yourCheckOut}: <b>${record.check_out_time ? formatTime12(record.check_out_time) : translations[currentLang].notRecorded}</b></div>`;
         
-        detailOut.insertAdjacentHTML('afterend', complianceHtml);
+        // بۆ شاردنەوەی کاتی لەناو مۆداڵی کالێندەر، ئەم هێڵەی خوارەوە کۆمێنت بکە (Comment Out)
+        // detailOut.insertAdjacentHTML('afterend', complianceHtml);
     }
 
     if (isOnLeave) {

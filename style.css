@@ -5,7 +5,7 @@
     --primary-rgb: 0, 98, 255; /* زیادکرا بۆ بەکارهێنان لە rgba */
     --primary-hover: #004dc2;
     --accent-pink: #ff69b4;
-    --bg-color: #f8fafc;
+    --bg-color: #f1f5f9; /* تۆزێك تاریکتر کردنی سپییەکە بۆ جیاکردنەوەی کاردەکە */
     --card-bg: #ffffff;
     --text-main: #0f172a;
     --text-sub: #64748b;
@@ -75,7 +75,10 @@ html {
 }
 
 body {
-   background-color: var(--bg-color);
+    /* دروستکردنی باکگراوندێکی جوڵاو بە بریقەیەکی نەرم */
+    background: linear-gradient(-45deg, var(--bg-color), var(--border-color), var(--bg-color), rgba(var(--primary-rgb), 0.08));
+    background-size: 400% 400%;
+    animation: shimmerBG 15s ease infinite;
     color: var(--text-main); /* Use new variable name */
     /* Support for iPhone Notch/Safe Areas */
     padding-top: env(safe-area-inset-top);
@@ -86,8 +89,21 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    transition: background-color 0.5s ease, opacity 0.4s ease, transform 0.4s ease;
+    transition: background 0.5s ease, opacity 0.4s ease, transform 0.4s ease;
     overflow-x: hidden;
+}
+
+/* ئەنیمەیشنی بریقەی باکگراوند */
+@keyframes shimmerBG {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
 .page-slide-left {
@@ -353,14 +369,21 @@ body {
 
 .login-card {
     background: var(--card-bg);
-    padding: 25px 25px;
+    padding: 15px 20px; /* کۆمپاکتر کردنی پادینگی ناوەوە */
     border-radius: 24px;
     width: 100%;
-    max-width: 440px; /* کەمێک زیادکرا بۆ ئەوەی کالێندەرەکە جێگیر بێت */
+    max-width: 420px; /* پانی زیاتر بۆ لاپتۆپ و شاشە گەورەکان */
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08); /* More modern, soft shadow */
     text-align: center;
     border: 1px solid var(--border-color);
     animation: fadeIn 0.6s ease;
+}
+
+/* ڕێگریکردن لە گۆڕانی ڕەنگی خانەکە بۆ خۆڵەمێشی یان زەرد لە کاتی Autofill */
+input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px var(--card-bg) inset !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+    transition: background-color 5000s ease-in-out 0s;
 }
 
 @keyframes fadeIn {
@@ -369,14 +392,15 @@ body {
 }
 
 .forgot-container {
-    text-align: right;
-    margin-bottom: 20px;
+    text-align: left;
+    margin-top: -12px;
+    margin-bottom: 18px;
     padding: 0 5px;
 }
 
 .forgot-link {
     color: var(--text-sub);
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     text-decoration: none;
     font-weight: 600;
     transition: var(--transition);
@@ -427,11 +451,11 @@ input::-webkit-contacts-auto-fill-button {
 }
 
 .logo-box {
-    width: 70px;
-    height: 70px;
+    width: 55px;
+    height: 55px;
     background: #fff;
     border-radius: 20px; /* Slightly more rounded */
-    margin: 0 auto 15px; /* Reduced margin to bring title closer */
+    margin: 0 auto 10px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -441,20 +465,20 @@ input::-webkit-contacts-auto-fill-button {
 
 .company-logo { max-width: 70%; object-fit: contain; }
 
-h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 4px; color: var(--text-main); } /* Bold title, closer to subtitle */
-.subtitle { color: var(--text-sub); font-size: 0.85rem; margin-bottom: 18px; font-weight: 500; } /* Closer to inputs */
+h1 { font-size: 1.25rem; font-weight: 800; margin-bottom: 4px; color: var(--text-main); }
+.subtitle { color: var(--text-sub); font-size: 0.75rem; margin-bottom: 42px; font-weight: 500; }
 
-.input-group { margin-bottom: 15px; text-align: right; }
-label { display: block; margin-bottom: 8px; font-size: 0.85rem; font-weight: 600; color: var(--text-sub); }
+.input-group { margin-bottom: 18px; text-align: right; }
+label { display: block; margin-bottom: 6px; font-size: 0.85rem; font-weight: 600; color: var(--text-sub); }
 
 .input-wrapper { position: relative; display: flex; align-items: center; }
 
 input {
     width: 100%;
-    padding: 10px 42px 10px 40px;
+    padding: 12px 42px 12px 40px;
     border-radius: 12px;
-    border: 1px solid var(--border-color);
-    background: var(--input-bg);
+    border: 1.5px solid var(--border-color);
+    background: var(--card-bg); /* هەمیشە سپی دەبێت لە لایتی تێمدا */
     color: var(--text-main);
     font-size: 0.95rem;
     outline: none;
@@ -464,7 +488,7 @@ input {
 input:focus {
     border-color: var(--primary);
     background: var(--card-bg);
-    box-shadow: 0 0 0 4px rgba(0, 98, 255, 0.1);
+    box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.15), 0 4px 12px rgba(var(--primary-rgb), 0.08);
 }
 
 .input-icon {
@@ -473,9 +497,42 @@ input:focus {
     color: var(--text-sub);
     transition: var(--transition);
     pointer-events: none;
+    z-index: 6;
 }
 
-input:focus + .input-icon { color: var(--accent-pink); }
+input:focus ~ .input-icon { color: var(--accent-pink); }
+
+.floating-label {
+    position: absolute !important;
+    right: 42px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    margin: 0 !important;
+    padding: 0 4px !important;
+    pointer-events: none !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    background: transparent !important;
+    color: var(--text-sub) !important;
+    font-size: 0.85rem !important;
+    z-index: 5;
+}
+
+input:not(:placeholder-shown) ~ .floating-label,
+input:-webkit-autofill ~ .floating-label,
+input:autofill ~ .floating-label,
+input:focus ~ .floating-label {
+    top: 0 !important;
+    right: 15px !important;
+    font-size: 0.72rem !important;
+    background: var(--card-bg) !important;
+    padding: 0 6px !important;
+    color: var(--text-sub) !important; /* ڕەنگی بنەڕەتی کاتێک خانەکە پڕە یان جێهێڵراوە */
+}
+
+/* تەنها لە کاتی فۆکەس و کلیک کردن ڕەنگەکەی بگۆڕێت بۆ شین */
+input:focus ~ .floating-label {
+    color: var(--primary) !important;
+}
 
 .eye-icon {
     position: absolute;
@@ -1086,10 +1143,16 @@ input:focus + .input-icon { color: var(--accent-pink); }
     }
 
     .login-card {
-        width: 100%;
         padding: 20px 18px;
         border-radius: 20px;
         max-width: none;
+        width: 100%; /* گەڕانەوە بۆ باری بنەڕەتی بۆ ئەوەی کار لە داشبۆرد نەکات */
+    }
+
+    /* تەنها ئەو کاردەی لۆگین کە ڕاستەوخۆ لەناو body دایە (وەک لاپەڕەی چوونەژوورەوە) دوور بکەوێتەوە لە لێوارەکان */
+    body > .login-card {
+        width: calc(100% - 32px);
+        margin: 0 16px;
     }
 
     .top-controls {
@@ -1123,6 +1186,11 @@ input[type="date"]:focus::-webkit-calendar-picker-indicator {
     .calendar-grid {
         gap: 3px;
     }
+
+    .subtitle {
+        margin-bottom: 35px; /* مەودایەکی گونجاو بۆ مۆبایل تاوەکو تێکەڵ بوون ڕوونەدات */
+    }
+
 
     .calendar-day {
         font-size: 0.75rem;
