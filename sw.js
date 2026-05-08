@@ -45,25 +45,19 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  // نێتوۆرک سەرەتا، کاش دواتم
   e.respondWith(
-    fetch(e.request)
-      .then((networkRes) => {
-        // ئەگەر سەرکەوتوو بوو، کاشیشی بکە
+    caches.match(e.request).then((cachedRes) => {
+      // لە پشتەوە نێتوۆرکەوە تازە بکە
+      const fetchPromise = fetch(e.request).then((networkRes) => {
         if (networkRes.ok) {
           const clone = networkRes.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
         }
         return networkRes;
-      })
-      .catch(() => {
-        // ئەگەر نێتوۆرک نەبوو، لە کاشەوە بگەڕێنە
-        return caches.match(e.request).then((res) => {
-          if (res) return res;
-          if (e.request.mode === 'navigate') {
-            return caches.match('/index.html');
-          }
-        });
-      })
+      }).catch(() => cachedRes);
+
+      // ئەگەر کاش هەبوو، خێرا بگەڕێنە، نێتوۆرک لە پشتەوە کار بکات
+      return cachedRes || fetchPromise;
+    })
   );
 });
