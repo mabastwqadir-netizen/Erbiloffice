@@ -257,12 +257,8 @@ body:has(.dashboard-container) {
 .theme-toggle-btn:hover, .icon-btn:hover {
     transform: translateY(-2px);
     border-color: var(--primary);
-    background: rgba(0, 98, 255, 0.05);
-}
-
-/* سپیکردنی باکگراوەندی دوگمەی سێتینگ و تێم لە کاتی هۆڤەر */
-.theme-toggle-btn:hover, .settings-toggle-btn:hover {
-    background: #ffffff !important;
+    background: var(--card-bg) !important; /* بەکارهێنانی گۆڕاو بۆ ئەوەی لە هەردوو دۆخەکە کار بکات */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .settings-toggle-btn {
@@ -546,10 +542,10 @@ input:focus {
 input:focus ~ .input-icon { color: var(--accent-pink); }
 
 .floating-label {
-    position: absolute !important;
-    right: 42px !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
+    position: absolute;
+    right: 42px;
+    top: 50%;
+    transform: translateY(-50%);
     margin: 0 !important;
     padding: 0 4px !important;
     pointer-events: none !important;
@@ -557,15 +553,16 @@ input:focus ~ .input-icon { color: var(--accent-pink); }
     background: transparent !important;
     color: var(--text-sub) !important;
     font-size: 0.85rem !important;
-    z-index: 5;
+    z-index: 10;
 }
 
 input:not(:placeholder-shown) ~ .floating-label,
 input:-webkit-autofill ~ .floating-label,
 input:autofill ~ .floating-label,
 input:focus ~ .floating-label {
-    top: 0 !important;
-    right: 15px !important;
+    top: 0;
+    right: 15px;
+    transform: translateY(-50%) scale(0.9); /* بۆ ئەوەی جوانتر بنیشێت لەسەر بۆردەرەکە */
     font-size: 0.72rem !important;
     background: var(--card-bg) !important;
     padding: 0 6px !important;
@@ -1185,17 +1182,13 @@ input:focus ~ .floating-label {
         padding: 15px;
     }
 
-    .login-card {
+    body > .login-card {
         padding: 20px 18px;
         border-radius: 20px;
         max-width: none;
-        width: 100%; /* گەڕانەوە بۆ باری بنەڕەتی بۆ ئەوەی کار لە داشبۆرد نەکات */
+        width: calc(100% - 32px); /* دروستکردنی بۆشایی ١٦ پێکسڵ لە لای ڕاست و چەپ */
+        margin: 0 auto; /* ناوەندکردنی کارتەکە */
     }
-
-    /* لادانی مارجینی سەرەوە بۆ ئەوەی فڵێکس بە دروستی ناوەندی بکات */
-body > .login-card {
-    margin-top: 0;
-}
      
 .calendar-nav-btn {
     padding: 4px 8px !important;
