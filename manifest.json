@@ -2,7 +2,7 @@
   "name": "Attendance System - Ihec",
   "short_name": "Ihec InOut",
   "description": "Attendance and Departure System - Ihec",
-  "start_url": "index.html",
+  "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
