@@ -328,14 +328,16 @@ function startLiveClock() {
         
         if (dateElement) {
             const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-            let formattedDate = now.toLocaleDateString(currentLang === 'ku' ? 'ku-IQ' : 'ar-IQ', options);
+            let formattedDate = "";
 
-            // Fallback for Kurdish if toLocaleDateString doesn't provide localized month/weekday names
-            // This checks if the formatted date is purely numeric (e.g., "1/1/2023")
-            if (currentLang === 'ku' && formattedDate.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+            if (currentLang === 'ku') {
+                // دروستکردنی ڕێکەوتی کوردی بە شێوەیەکی دەستی بۆ دڵنیابوونەوە لە کوردی ناوەندی (سۆرانی)
                 const monthName = translations[currentLang].months[now.getMonth()];
                 const weekdayName = translations[currentLang].weekdays[now.getDay()];
-                formattedDate = `${weekdayName}, ${now.getDate()} ${monthName} ${now.getFullYear()}`;
+                formattedDate = `${weekdayName}، ${now.getDate()}ی ${monthName}ی ${now.getFullYear()}`;
+            } else {
+                // بۆ زمانی عەرەبی وەک خۆی دەمێنێتەوە چونکە پشتگیری وێبگەڕەکان بۆی زۆر باشە
+                formattedDate = now.toLocaleDateString('ar-IQ', options);
             }
             dateElement.innerText = formattedDate;
         }

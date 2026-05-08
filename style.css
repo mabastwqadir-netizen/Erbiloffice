@@ -1961,3 +1961,62 @@ min-height: 80px; /* Ensure consistent height for both items */
 
 .time-card-modern .t-label { font-size: 0.65rem; font-weight: 700; color: var(--text-sub); display: block; margin-bottom: 2px; }
 .time-card-modern .t-value { font-size: 1.1rem; font-weight: 900; color: var(--text-main); font-family: 'Inter', sans-serif; }
+
+/* --- Modern Connectivity Toast --- */
+.connectivity-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--card-bg);
+    color: var(--text-main);
+    padding: 10px 22px;
+    border-radius: 50px;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
+    z-index: 1000000;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    opacity: 0;
+    pointer-events: none;
+    border: 1px solid var(--border-color);
+}
+
+.connectivity-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.connectivity-toast.success {
+    border-right: 4px solid #22c55e;
+}
+.connectivity-toast.success i { color: #22c55e; animation: fadeIn 0.5s ease; }
+
+[dir="ltr"] .connectivity-toast.success {
+    border-right: none;
+    border-left: 4px solid #22c55e;
+}
+
+/* --- Permanent Small Offline Bar --- */
+.offline-bar {
+    position: fixed;
+    top: -30px;
+    left: 0;
+    right: 0;
+    height: 26px;
+    background: #ef4444;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 800;
+    z-index: 2000;
+    transition: top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3);
+}
+.offline-bar.show { top: 0; }

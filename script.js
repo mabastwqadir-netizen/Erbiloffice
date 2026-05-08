@@ -254,6 +254,12 @@ async function handleLogin() {
         return;
     }
 
+    if (!navigator.onLine) {
+        errorMsg.innerHTML = `<i class="fas fa-wifi-slash"></i> <span>${translations[currentLang].noInternet}</span>`;
+        errorMsg.style.display = 'flex';
+        return;
+    }
+
     // دەستپێکردنی لۆدینگ و گۆڕینی تێکستی دوگمەکە
     btn.disabled = true;
     loader.style.display = 'block';
@@ -593,4 +599,43 @@ async function handleResetPassword() {
         // دوای گۆڕینی پاسوۆرد، بەکارهێنەر دەردەکەین بۆ ئەوەی دووبارە لۆگین بێتەوە بە سەلامەتی
         await supabaseClient.auth.signOut();
     }
+}
+
+// --- Connectivity Monitoring (بۆ ئاگادارکردنەوە لە گەڕانەوەی ئینتەرنێت) ---
+window.addEventListener('online', () => {
+    toggleOfflineBar(false);
+    showConnectivityToast(translations[currentLang].internetRestored, 'success');
+});
+
+window.addEventListener('offline', () => {
+    toggleOfflineBar(true);
+});
+
+function showConnectivityToast(msg, type) {
+    let toast = document.getElementById('connectivity-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'connectivity-toast';
+        document.body.appendChild(toast);
+    }
+    
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-wifi' : 'fa-wifi-slash'}"></i> <span>${msg}</span>`;
+    toast.className = `connectivity-toast ${type} show`;
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 4000);
+}
+
+function toggleOfflineBar(show) {
+    let bar = document.getElementById('offline-bar');
+    if (!bar) {
+        bar = document.createElement('div');
+        bar.id = 'offline-bar';
+        bar.className = 'offline-bar';
+        document.body.appendChild(bar);
+    }
+    bar.innerText = translations[currentLang].offlineStatus;
+    if (show) bar.classList.add('show');
+    else bar.classList.remove('show');
 }

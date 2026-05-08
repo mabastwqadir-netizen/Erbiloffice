@@ -227,6 +227,9 @@ const translations = {
         strong: "بەهێز",
         veryStrong: "زۆر بەهێز",
         rateLimitError: "داواکاری زۆر نێردراوە! تکایە کاتژمێرێکی تر هەوڵ بدەرەوە.",
+        noInternet: "هێڵی ئینتەرنێت بەردەست نییە!",
+        internetRestored: "ئینتەرنێت گەڕایەوە",
+        offlineStatus: "تۆ ئێستا لە دەرەوەی هێڵیت (Offline)",
     },
     ar: {
         title: "ERBIL OFFICE - IHEC",
@@ -454,6 +457,9 @@ const translations = {
         strong: "قوي",
         veryStrong: "قوي جداً",
         rateLimitError: "تم إرسال الكثير من الطلبات! يرجى المحاولة بعد ساعة.",
+        noInternet: "لا يوجد اتصال بالإنترنت!",
+        internetRestored: "تم استعادة الاتصال بالإنترنت",
+        offlineStatus: "أنت الآن خارج الاتصال (Offline)",
     }
 };
 
