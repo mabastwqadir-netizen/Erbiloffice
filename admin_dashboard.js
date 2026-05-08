@@ -149,18 +149,14 @@ function renderBranchDropdown() {
 
 async function loadInitialProfiles() {
     try {
-        // گۆڕینی sessionStorage بۆ localStorage بۆ کاشکردنی هەمیشەیی
+        // تەنها بۆ نیشاندانی خێرا داتاکانی پێشوو لە کاشەوە دەخوێنینەوە، بەڵام هەرگیز لێرە ناوەستین
+        // و هەمیشە داوای داتای نوێ لە سێرڤەر دەکەین بۆ ئەوەی دۆخی ئامێرەکان و بەستنەوەیان هەمیشە نوێ بێت.
         const cachedStaff = localStorage.getItem('staff_cache');
         const cachedAdmins = localStorage.getItem('admins_cache');
-        const lastProfileSync = localStorage.getItem('last_profile_sync');
-        const now = Date.now();
-
-        // تەنها ئەگەر داتاکە هەبێت و کەمتر لە یەک سەعات (٣٦٠٠٠٠٠ میلی چرکە) تێپەڕ بووبێت، کاشەکە بەکاربهێنە
-        if (cachedStaff && cachedAdmins && lastProfileSync && (now - lastProfileSync < 3600000)) {
+        if (cachedStaff && cachedAdmins) {
             staffCache = JSON.parse(cachedStaff);
             allAdminsCached = JSON.parse(cachedAdmins);
             renderAdmins(allAdminsCached);
-            return;
         }
 
         // هێنانی ئادمینەکان و فەرمانبەران تەنها بۆ یەکجار لە کاتی کردنەوەی لاپەڕەکە
@@ -178,6 +174,8 @@ async function loadInitialProfiles() {
         localStorage.setItem('last_profile_sync', now);
 
         renderAdmins(allAdminsCached);
+        // نوێکردنەوەی لیستی ئامادەبوون ئەگەر پێشتر ڕێندەر کرابوو تا دۆخی ئامێرەکان ڕاست بکرێنەوە
+        if (attendanceCache.length > 0) applyFiltersLocally();
     } catch (err) {
         console.error("Error loading initial profiles:", err.message);
     }
@@ -1240,6 +1238,16 @@ async function resetDeviceID() {
         alert("Error: " + error.message);
     } else {
         alert(translations[currentLang].resetSuccess);
+        
+        // نوێکردنەوەی کاشی ناوخۆیی و لوکاڵ ستۆریج بۆ ئەوەی گۆڕانکارییەکە یەکسەر دەربکەوێت
+        const emp = staffCache.find(s => s.id === selectedUserIdForReset);
+        if (emp) {
+            emp.device_id = null;
+            localStorage.setItem('staff_cache', JSON.stringify(staffCache));
+        }
+        // نوێکردنەوەی یەکسەری لیستەکە بۆ لابردنی ئایکۆنی مۆبایلەکە
+        applyFiltersLocally();
+
         if (document.getElementById('empSettingsModal')) document.getElementById('empSettingsModal').style.display = 'none';
     }
 }

@@ -71,14 +71,18 @@ input, textarea {
 }
 
 html {
-    background-color: var(--bg-color); /* دڵنیابوونەوە لەوەی پشتینەی بنەڕەتی ڕەنگێکی جێگیرە */
+    /* گواستنەوەی باکگراوەند بۆ ئێرە بۆ ئەوەی هەموو شاشەکە بگرێتەوە بەبێ پچڕان */
+    background: linear-gradient(-45deg, var(--bg-color), var(--border-color), var(--bg-color), rgba(var(--primary-rgb), 0.08));
+    background-attachment: fixed;
+    background-size: 400% 400%;
+    animation: shimmerBG 15s ease infinite;
+    height: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-    /* دروستکردنی باکگراوندێکی جوڵاو بە بریقەیەکی نەرم */
-    background: linear-gradient(-45deg, var(--bg-color), var(--border-color), var(--bg-color), rgba(var(--primary-rgb), 0.08));
-    background-size: 400% 400%;
-    animation: shimmerBG 15s ease infinite;
+    background: transparent !important; /* لابردنی باکگراوەندی body بۆ ئەوەی html دیار بێت */
     color: var(--text-main); /* Use new variable name */
     /* Support for iPhone Notch/Safe Areas */
     padding-top: env(safe-area-inset-top);
@@ -87,8 +91,8 @@ body {
     padding-right: env(safe-area-inset-right);
     display: flex;
     justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+    align-items: flex-start; /* گۆڕین بۆ سەرەتا بۆ ڕێگری لە دروستبوونی بۆشایی لە کاتی سکڕۆڵ */
+    min-height: 100%;
     transition: background 0.5s ease, opacity 0.4s ease, transform 0.4s ease;
     overflow-x: hidden;
 }
@@ -361,10 +365,38 @@ body {
 
 .lang-dropdown-content div:hover { background: var(--input-bg); color: var(--primary); }
 
-#welcomeUser {
-    margin-bottom: 5px;
-    font-weight: 700;
-    color: var(--text-main);
+.employee-profile-card {
+    background: rgba(var(--primary-rgb), 0.05); /* ڕەنگی شینی کاڵ بۆ ناو کاردەکە */
+    border: 1.5px solid var(--primary); /* بۆردەرێکی شین */
+    border-radius: 20px; /* گۆشەی خڕی مۆدێرن */
+    padding: 15px 20px; /* بۆشایی ناوەوەی کۆمپاکت */
+    margin-bottom: 20px; /* بۆشایی لە خوار کاردەکەوە */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* ناوەندکردنی هەموو توخمەکان */
+    text-align: center; /* ناوەندکردنی دەقەکان */
+    box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.1); /* سێبەرێکی نەرمی شین */
+    transition: all 0.3s ease;
+}
+
+.employee-profile-card:hover {
+    box-shadow: 0 12px 25px rgba(var(--primary-rgb), 0.15);
+    transform: translateY(-2px);
+}
+
+.employee-profile-card #welcomeUser {
+    font-size: 1.4rem; /* فۆنتێکی گەورەتر بۆ ناو */
+    font-weight: 900; /* زۆر تۆخ */
+    color: var(--primary); /* ڕەنگی شینی سەرەکی */
+    margin-bottom: 10px; /* بۆشایی نێوان ناو و پلە/بنکە */
+    line-height: 1.2;
+}
+
+.employee-profile-card #userRole {
+    font-size: 0.85rem; /* فۆنتێکی بچووکتر بۆ پلە/بنکە */
+    font-weight: 600;
+    color: var(--text-sub); /* ڕەنگێکی کاڵتر */
+    line-height: 1.4;
 }
 
 .login-card {
@@ -1207,7 +1239,7 @@ input[type="date"]:focus::-webkit-calendar-picker-indicator {
 .dashboard-container {
     width: 100%;
     max-width: 450px;
-    margin: 80px auto 20px;
+    margin: 80px auto 0;
     padding: 0 15px;
     animation: fadeIn 0.8s ease-out;
 }
@@ -1742,7 +1774,7 @@ min-height: 80px; /* Ensure consistent height for both items */
     margin-top: 5px;
 }
 @media (max-width: 640px) {
-    .developer-credit { margin-top: 18px; font-size: 0.5.5rem; }
+    .developer-credit { margin-top: 18px; font-size: 0.55rem; }
     .copyright-text { font-size: 0.6rem; margin-bottom: 5px; }
 }
 
