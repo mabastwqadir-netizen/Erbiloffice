@@ -338,6 +338,154 @@ body:has(.dashboard-container) {
     background: #fee2e2;
 }
 
+/* دوگمەی نوێی بەڕێوەبەر لە ژێر مێژوو */
+.mgmt-launch-btn {
+    background: linear-gradient(135deg, #334155, #0f172a) !important; /* ڕەنگێکی ڕەساسی تۆخی فەرمی و شیک */
+    color: #ffffff !important;
+    border: none !important;
+    margin: 5px auto 15px !important;
+    border-radius: 20px !important;
+    font-weight: 800 !important;
+    height: 56px;
+    width: 100%;
+    font-size: 0.92rem !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.mgmt-launch-btn:active {
+    transform: scale(0.96);
+    filter: brightness(1.2);
+}
+
+/* مەودای نێوان کالێندەر و دوگمەی بەڕێوەبردن تەنها کاتێک کالێندەرەکە دەکرێتەوە */
+#calendarWrapper.expanded + .mgmt-launch-btn {
+    margin-top: 20px !important;
+}
+
+/* دیزاینی مۆدێرنی مۆداڵ */
+.sub-admin-modal {
+    overflow: visible !important;
+    width: 95% !important;
+    max-width: 440px !important;
+    border: none !important;
+    background: transparent !important; /* لابردنی پاشبنەما بۆ ڕێگری لە دەرکەوتنی سپی لە ژێر شینەکە */
+     transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1), min-height 0.3s ease;
+}
+
+/* دوگمەی داخستنی مۆدێرن و گونجاو بۆ مۆبایل */
+.modal-close-btn-modern {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    width: 38px;
+    height: 38px;
+    background: #ef4444; /* باکگراوندی سوور */
+    border: none;
+    color: #ffffff; /* ئایکۆنی سپی */
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.15);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 999999;
+}
+
+.modal-close-btn-modern:active {
+    transform: scale(0.85) rotate(8deg); /* بچووکبوونەوە و کەمێک سوڕان لە کاتی داگرتن */
+    background: #dc2626; /* سوورێکی تۆختر لە کاتی داگرتن بۆ فیدباک */
+    color: white;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+}
+
+/* ڕیزکردنی دوگمەکانی ناو مۆداڵ بە تەنیشت یەک */
+.mgmt-buttons-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.mgmt-action-btn {
+    height: 48px;
+    border-radius: 14px;
+    border: 1.5px solid var(--primary);
+    background: rgba(var(--primary-rgb), 0.05);
+    color: var(--primary);
+    font-weight: 800;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mgmt-action-btn:active {
+    transform: scale(0.94);
+    background: var(--primary);
+    color: white;
+}
+
+.mgmt-action-btn.active {
+    background: var(--primary);
+    color: white;
+}
+
+/* گونجاندنی تایبەت بۆ مۆبایل */
+@media (max-width: 480px) {
+    .modal-close-btn-modern {
+        top: 12px !important;
+        left: 12px !important;
+        width: 36px !important;
+        height: 36px !important;
+        border-radius: 12px !important;
+    }
+
+     .branch-card-content {
+        padding: 15px 8px !important; /* کەمکردنەوەی پادینگی لایەکان بۆ ئەوەی کالێندەر جێگەی بێتەوە */
+    }
+
+    .calendar-grid {
+        gap: 3px !important; /* کەمکردنەوەی بۆشایی نێوان ڕۆژەکان لە مۆبایل */
+    }
+
+    .calendar-day {
+        height: 36px !important; /* کەمێک کەمکردنەوەی بەرزی خانەکان */
+        font-size: 0.7rem !important;
+    }
+     .calendar-day-name {
+        font-size: 0.6rem !important;
+    }
+
+    .branch-card-banner {
+        padding: 15px !important;
+    }
+
+    .branch-logo-circle {
+        width: 45px !important;
+        height: 45px !important;
+    }
+
+    .branch-card-content {
+        padding: 15px !important;
+    }
+}
+
+.modal-close-btn-modern:hover {
+    transform: rotate(90deg) scale(1.1);
+    background: #ef4444;
+    color: white;
+}
 .lang-dropdown-content {
     position: absolute;
     top: 40px;
@@ -1810,14 +1958,95 @@ min-height: 80px; /* Ensure consistent height for both items */
 .dev-name { font-weight: 700; color: var(--text-main); }
 
 /* --- Sub-Admin Panel Improvements --- */
-.sub-admin-panel .panel-title {
-    margin-bottom: 15px;
-    font-size: 1rem;
-    color: var(--primary);
-    font-weight: 800;
+.sub-admin-panel {
+    padding: 0 !important;
+    overflow: visible !important; /* ڕێگەدان بە لیستەکان بچنە دەرەوەی کاردەکە */
+    border: 1.5px solid var(--border-color);
+}
+
+.branch-card-banner {
+    background: linear-gradient(135deg, var(--primary), #4f46e5);
+    border-radius: 24px 24px 0 0; /* خڕکردنی لێوارەکانی سەرەوەی بانەرەکە چونکە overflow لابراوە */
+    padding: 20px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 15px;
+    color: white;
+}
+
+.branch-logo-circle {
+    width: 60px;
+    height: 60px;
+    background: white;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.branch-logo-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.branch-info-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: flex-start; /* بەپێی ئاراستەی زمانەکە لای چەپ یان ڕاست */
+}
+
+.branch-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+}
+
+.branch-id-display {
+    font-weight: 900;
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
+    opacity: 0.95;
+}
+
+.branch-title-sep {
+    font-size: 1.1rem;
+    opacity: 0.5;
+    font-weight: 300;
+}
+
+.branch-name-display {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.branch-mgmt-badge {
+    background: rgba(255, 255, 255, 0.15);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.branch-card-content {
+    padding: 22px;
+    background: var(--card-bg); /* دانانی ڕەنگی سپی تەنها بۆ ئەم بەشە */
+    border-radius: 0 0 24px 24px; /* خڕکردنی لێوارەکانی خوارەوە */
 }
 
 .sub-admin-panel .history-btn {

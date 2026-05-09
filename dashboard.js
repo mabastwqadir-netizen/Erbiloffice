@@ -8,7 +8,7 @@ const CHECKOUT_MINUTE_LIMIT = 30;
 // ڕێکخستنی کاتی ڕێپێدراو بۆ ئامادەبوون (بۆ نموونە 7:30 بەیانی تا 12:00 نیوەڕۆ)
 const CHECKIN_START_HOUR = 8;
 const CHECKIN_START_MINUTE = 0;
-const CHECKIN_END_HOUR = 12;
+const CHECKIN_END_HOUR = 24;
 const CHECKIN_END_MINUTE = 0;
 
 let client;
@@ -30,6 +30,7 @@ let staffInBranch = []; // بۆ هەڵگرتنی لیستی فەرمانبەرا
 let selectedStaffId = null; // ئەو فەرمانبەرەی بەرپرسی بنکە هەڵیبژاردووە
 let lastViewedStaffId = null; // پاشەکەوتکردنی ئایدی فەرمانبەری ئێستا بۆ کالێندەر
 let selectedLeaveStartDate = null;
+let mgmtModal = null; // گۆڕاوی جیهانی بۆ مۆداڵی بەڕێوەبردن
 let selectedLeaveStartTime = null;
 let selectedLeaveEndTime = null;
 let lastCheckedDate = null; // بۆ چاودێریکردنی گۆڕانی ڕۆژ لە کاتی کراوەیی ئەپەکە
@@ -1295,89 +1296,137 @@ function renderProfileDisplay() {
 }
 
 async function initSubAdminPanel() {
-    // دروستکردنی کۆنتێنەری بەڕێوەبردن لە ژێر کالێندەرەکە
+    // دۆزینەوەی کۆنتێنەری سەرەکی داشبۆرد و دوگمەی مێژوو
     const container = document.querySelector('.dashboard-container');
-    const panel = document.createElement('div');
-    panel.className = 'status-card sub-admin-panel';
-    panel.style.marginTop = '20px';
+    const historyBtn = document.querySelector('.history-btn');
+    const calendarWrapper = document.getElementById('calendarWrapper');
+    if (!container || !historyBtn) return;
+
+    // دروستکردنی دوگمەی کردنەوەی بەشی بەڕێوەبردن
+    const mgmtBtn = document.createElement('button');
+    mgmtBtn.className = 'mgmt-launch-btn'; // لادانی history-btn بۆ ڕێگری لە تێکەڵبوونی ڕەنگ
+    mgmtBtn.innerHTML = `<i class="fas fa-users-cog"></i> <span>${translations[currentLang].branchManagement}</span>`;
+    mgmtBtn.onclick = openMgmtModal;
     
+    // جێگیرکردنی لە خوار کالێندەرەکە بۆ ئەوەی کاتێک مێژوو دەکرێتەوە، دوگمەی بەڕێوەبردن پاڵ بنێت بۆ خوارەوە
+    if (calendarWrapper) {
+        calendarWrapper.parentNode.insertBefore(mgmtBtn, calendarWrapper.nextSibling);
+    } else {
+        historyBtn.parentNode.insertBefore(mgmtBtn, historyBtn.nextSibling);
+    }
+}
+
+async function openMgmtModal() {
+    if (!mgmtModal) {
+        mgmtModal = document.createElement('div');
+        mgmtModal.id = 'mgmtModal';
+        mgmtModal.className = 'modal-overlay';
+        mgmtModal.onclick = (e) => { if (e.target === mgmtModal) mgmtModal.style.display = 'none'; };
+        document.body.appendChild(mgmtModal);
+    }
+
     const t = translations[currentLang];
-    
-    panel.innerHTML = `
-        <h4 class="panel-title">
-            <i class="fas fa-users-cog"></i> ${t.branchManagement}
-        </h4>
-        <div class="custom-select" id="staffSelectDropdown" onclick="toggleCustomDropdown(event, 'staffSelectDropdown')" style="margin-bottom:10px;">
-            <div class="select-trigger">
-                <span class="selected-text">${t.selectStaff}...</span>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="options-list" id="staffOptionsList"></div>
-        </div>
-        <div id="staffActions" style="display:none; gap:12px; flex-direction:column; margin-top:10px;">
-            <button class="checkin-btn history-btn" onclick="viewSelectedStaffAttendance(this)">
-                <i class="fas fa-history"></i> <span>${t.viewHistory}</span>
+    mgmtModal.innerHTML = `
+        <div class="modal-window sub-admin-modal" style="padding:0; position:relative; overflow:visible; margin: 10px auto;">
+            <button class="modal-close-btn-modern" onclick="document.getElementById('mgmtModal').style.display='none'">
+                <i class="fas fa-times"></i>
             </button>
-            <div id="staffCalendarWrapper" style="max-height: 0; opacity: 0; overflow: hidden; visibility: hidden; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: top;">
-                <div id="staffCalendarView" class="calendar-container" style="margin-top: 10px; border: 1px solid var(--border-color); background: var(--card-bg);"></div>
+            <div class="branch-card-banner" style="border-radius:24px 24px 0 0; padding:22px;">
+                <div class="branch-logo-circle">
+                    <img src="assets/icon.png" alt="Branch Logo">
+                </div>
+                <div class="branch-info-text">
+                    <div class="branch-title-row">
+                        <span class="branch-id-display" style="font-size:1.1rem;">${userProfile.branches ? userProfile.branches.branch_id : '--'}</span>
+                        <span class="branch-title-sep">|</span>
+                        <h4 class="branch-name-display" style="font-size:1rem;">${userProfile.branches ? userProfile.branches.branch_name : t.noBranch}</h4>
+                    </div>
+                    <div class="branch-mgmt-badge" style="font-size:0.7rem; padding:3px 10px;">
+                        <i class="fas fa-users-cog"></i> ${t.branchManagement}
+                    </div>
+                </div>
             </div>
-            <div class="leave-management-card">
-                <label class="leave-label"><i class="fas fa-plane-departure"></i> ${t.leaveManagement}</label>
-                
-                <div class="date-range-container">
-                    <div class="input-wrapper-labeled">
-                        <label>${t.from}</label>
-                        <input type="date" id="subLeaveStart" class="glass-input" onchange="selectedLeaveStartDate=this.value">
-                    </div>
-                    <div class="input-wrapper-labeled">
-                        <label>${t.to}</label>
-                        <input type="date" id="subLeaveEnd" class="glass-input" onchange="selectedLeaveEndDate=this.value">
-                    </div>
-                </div>
-                
-                <div id="hourlyTimeInputs" class="date-range-container" style="display:none;">
-                    <div class="input-wrapper-labeled">
-                        <label>${t.from}</label>
-                        <input type="time" id="subLeaveStartTime" class="glass-input" onchange="selectedLeaveStartTime=this.value">
-                    </div>
-                    <div class="input-wrapper-labeled">
-                        <label>${t.to}</label>
-                        <input type="time" id="subLeaveEndTime" class="glass-input" onchange="selectedLeaveEndTime=this.value">
-                    </div>
-                </div>
-                
-                <div class="custom-select" id="subLeaveReasonSelect" onclick="toggleCustomDropdown(event, 'subLeaveReasonSelect')" style="margin-bottom:8px;">
-                    <div class="select-trigger" style="height:44px; font-size:0.85rem;">
-                        <span class="selected-text">${t.selectLeaveReason}</span>
+            <div class="branch-card-content" style="overflow:visible;">
+                <div class="custom-select" id="staffSelectDropdown" onclick="toggleCustomDropdown(event, 'staffSelectDropdown')" style="margin-bottom:18px; z-index:1000;">
+                    <div class="select-trigger" style="height:52px; border-radius:16px; background: var(--input-bg);">
+                        <span class="selected-text">${t.selectStaff}</span>
                         <i class="fas fa-chevron-down"></i>
                     </div>
-                    <div class="options-list">
-                        <div class="option" onclick="selectSubLeaveReason(event, 'hourlyLeave', '${translations[currentLang].hourlyLeave}')">${translations[currentLang].hourlyLeave}</div>
-                        <div class="option" onclick="selectSubLeaveReason(event, 'regularLeave', '${translations[currentLang].regularLeave}')">${translations[currentLang].regularLeave}</div>
-                        <div class="option" onclick="selectSubLeaveReason(event, 'sickLeave', '${translations[currentLang].sickLeave}')">${translations[currentLang].sickLeave}</div>
-                        <div class="option" onclick="selectSubLeaveReason(event, 'maternityLeave', '${translations[currentLang].maternityLeave}')">${translations[currentLang].maternityLeave}</div>
-                        <div class="option" onclick="selectSubLeaveReason(event, 'longTermLeave', '${translations[currentLang].longTermLeave}')">${translations[currentLang].longTermLeave}</div>
-                        <div class="option" onclick="selectSubLeaveReason(event, 'mobileTeam', '${translations[currentLang].mobileTeam}')">${translations[currentLang].mobileTeam}</div>
-                        <div class="option" onclick="selectSubLeaveReason(event, 'workshop', '${translations[currentLang].workshop}')">${translations[currentLang].workshop}</div>
+                    <div class="options-list" id="staffOptionsList"></div>
+                </div>
+                <div id="staffActions" style="display:none; gap:12px; flex-direction:column; margin-top:5px; overflow:visible;">
+                    <div class="mgmt-buttons-row">
+                        <button class="mgmt-action-btn" id="toggleStaffHistoryBtn" onclick="viewSelectedStaffAttendance(this)">
+                            <i class="fas fa-history"></i> <span>${translations[currentLang].yourCheckInnn}</span>
+                        </button>
+                        <button class="mgmt-action-btn" id="toggleStaffLeaveBtn" onclick="toggleStaffLeaveSection(this)">
+                            <i class="fas fa-plane-departure"></i> <span>${t.leaveManagementt}</span>
+                        </button>
+                    </div>
+                    <div id="staffCalendarWrapper" style="max-height: 0; opacity: 0; overflow: hidden; visibility: hidden; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: top;">
+                        <div id="staffCalendarView" class="calendar-container" style="margin-top: 10px; border: 1px solid var(--border-color); background: var(--card-bg);"></div>
+                    </div>
+                    <div id="staffLeaveWrapper" style="max-height: 0; opacity: 0; overflow: hidden; visibility: hidden; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: top;">
+                        <div class="leave-management-card" style="background: var(--bg-color); border: 1px solid var(--border-color); padding:18px; border-radius:20px; overflow:visible; margin-top:10px;">
+                            <label class="leave-label" style="font-size:0.75rem; margin-bottom:10px;"><i class="fas fa-plane-departure"></i> ${t.leaveManagement}</label>
+                            
+                            <div class="date-range-container" style="gap:8px; margin-bottom:10px;">
+                                <div class="input-wrapper-labeled">
+                                    <label style="font-size:0.6rem; color:var(--primary);">${t.from}</label>
+                                    <input type="date" id="subLeaveStart" class="glass-input" style="height:40px; border-radius:10px; font-size:0.75rem;" onchange="selectedLeaveStartDate=this.value">
+                                </div>
+                                <div class="input-wrapper-labeled">
+                                    <label style="font-size:0.6rem; color:var(--primary);">${t.to}</label>
+                                    <input type="date" id="subLeaveEnd" class="glass-input" style="height:40px; border-radius:10px; font-size:0.75rem;" onchange="selectedLeaveEndDate=this.value">
+                                </div>
+                            </div>
+                            
+                            <div id="hourlyTimeInputs" class="date-range-container" style="display:none; gap:8px; margin-bottom:10px;">
+                                <div class="input-wrapper-labeled">
+                                    <label style="font-size:0.6rem; color:var(--primary);">${t.from}</label>
+                                    <input type="time" id="subLeaveStartTime" class="glass-input" style="height:40px; border-radius:10px; font-size:0.75rem;" onchange="selectedLeaveStartTime=this.value">
+                                </div>
+                                <div class="input-wrapper-labeled">
+                                    <label style="font-size:0.6rem; color:var(--primary);">${t.to}</label>
+                                    <input type="time" id="subLeaveEndTime" class="glass-input" style="height:40px; border-radius:10px; font-size:0.75rem;" onchange="selectedLeaveEndDate=this.value">
+                                </div>
+                            </div>
+                            
+                            <div class="custom-select" id="subLeaveReasonSelect" onclick="toggleCustomDropdown(event, 'subLeaveReasonSelect')" style="margin-bottom:15px; z-index:900;">
+                                <div class="select-trigger" style="height:46px; font-size:0.8rem; border-radius:12px;">
+                                    <span class="selected-text">${t.selectLeaveReason}</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="options-list">
+                                    <div class="option" onclick="selectSubLeaveReason(event, 'hourlyLeave', '${translations[currentLang].hourlyLeave}')">${translations[currentLang].hourlyLeave}</div>
+                                    <div class="option" onclick="selectSubLeaveReason(event, 'regularLeave', '${translations[currentLang].regularLeave}')">${translations[currentLang].regularLeave}</div>
+                                    <div class="option" onclick="selectSubLeaveReason(event, 'sickLeave', '${translations[currentLang].sickLeave}')">${translations[currentLang].sickLeave}</div>
+                                    <div class="option" onclick="selectSubLeaveReason(event, 'maternityLeave', '${translations[currentLang].maternityLeave}')">${translations[currentLang].maternityLeave}</div>
+                                    <div class="option" onclick="selectSubLeaveReason(event, 'longTermLeave', '${translations[currentLang].longTermLeave}')">${translations[currentLang].longTermLeave}</div>
+                                    <div class="option" onclick="selectSubLeaveReason(event, 'mobileTeam', '${translations[currentLang].mobileTeam}')">${translations[currentLang].mobileTeam}</div>
+                                    <div class="option" onclick="selectSubLeaveReason(event, 'workshop', '${translations[currentLang].workshop}')">${translations[currentLang].workshop}</div>
+                                </div>
+                            </div>
+                            <button class="login-btn save-leave-btn" style="height:50px; border-radius:16px;" onclick="saveStaffLeave()">
+                                <i class="fas fa-save"></i> <span>${t.saveLeave}</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <button class="login-btn save-leave-btn" onclick="saveStaffLeave()">
-                    <i class="fas fa-save"></i> <span>${t.saveLeave}</span>
-                </button>
             </div>
         </div>
     `;
-    container.appendChild(panel);
 
-    // هێنانی فەرمانبەرانی هەمان بنکە
+    mgmtModal.style.display = 'flex';
+
     const { data: staff } = await client
         .from('profiles') 
         .select('id, full_name')
         .eq('branch_id', userProfile.branch_id);
 
     if (staff) {
-        staffInBranch = staff; // Assign the fetched staff to the global variable
         const optionsList = document.getElementById('staffOptionsList');
+        optionsList.innerHTML = ''; // پاککردنەوە بۆ دڵنیایی
         staff.forEach(s => {
             const div = document.createElement('div');
             div.className = 'option';
@@ -1396,6 +1445,30 @@ function toggleCustomDropdown(event, id) {
     if (!isActive) el.classList.add('active');
 }
 
+function toggleStaffLeaveSection(btn) {
+    const leaveWrapper = document.getElementById('staffLeaveWrapper');
+    const calendarWrapper = document.getElementById('staffCalendarWrapper');
+    const historyBtn = document.getElementById('toggleStaffHistoryBtn');
+    
+    const isExpanding = leaveWrapper.style.maxHeight === '0px' || leaveWrapper.style.maxHeight === '';
+    
+    if (isExpanding) {
+        // داخستنی کالێندەر پێش کردنەوەی مۆڵەت
+        if (calendarWrapper) {
+            calendarWrapper.style.maxHeight = '0';
+            calendarWrapper.style.opacity = '0';
+            calendarWrapper.style.visibility = 'hidden';
+        }
+        if (historyBtn) historyBtn.classList.remove('active');
+    }
+
+    // نیشاندانی بەشی مۆڵەت
+    leaveWrapper.style.maxHeight = isExpanding ? '600px' : '0';
+    leaveWrapper.style.opacity = isExpanding ? '1' : '0';
+    leaveWrapper.style.visibility = isExpanding ? 'visible' : 'hidden';
+    btn.classList.toggle('active', isExpanding);
+}
+
 function selectStaffOption(event, id, name) {
     if (event) event.stopPropagation();
     selectedStaffId = id;
@@ -1406,17 +1479,21 @@ function selectStaffOption(event, id, name) {
 
     document.getElementById('staffActions').style.display = 'flex';
     
-    // ئەگەر بەرپرسی بنکە ناوی خۆی هەڵبژارد، دوگمەی مێژوو بشارەوە چونکە کالێندەری یەکەم هی خۆیەتی
-    const historyBtn = document.querySelector('.sub-admin-panel .history-btn');
+    // پاککردنەوەی دۆخی دوگمەکان و شاردنەوەی بەشەکان کاتێک فەرمانبەر دەگۆڕدرێت
+    const historyBtn = document.getElementById('toggleStaffHistoryBtn');
+    const leaveBtn = document.getElementById('toggleStaffLeaveBtn');
+    const calendarWrapper = document.getElementById('staffCalendarWrapper');
+    const leaveWrapper = document.getElementById('staffLeaveWrapper');
+
     if (historyBtn) {
+        historyBtn.classList.remove('active');
+        // شاردنەوەی دوگمەی مێژوو ئەگەر فەرمانبەرەکە خودی بەکارهێنەرەکە بوو
         historyBtn.style.display = (id === currentUser.id) ? 'none' : 'flex';
     }
-
-    // شاردنەوەی کالێندەری فەرمانبەری پێشوو ئەگەر کراوە بوو
-    const wrapper = document.getElementById('staffCalendarWrapper');
-    wrapper.style.maxHeight = '0';
-    wrapper.style.opacity = '0';
-    wrapper.style.visibility = 'hidden';
+    if (leaveBtn) leaveBtn.classList.remove('active');
+    
+    if (calendarWrapper) { calendarWrapper.style.maxHeight = '0'; calendarWrapper.style.opacity = '0'; calendarWrapper.style.visibility = 'hidden'; }
+    if (leaveWrapper) { leaveWrapper.style.maxHeight = '0'; leaveWrapper.style.opacity = '0'; leaveWrapper.style.visibility = 'hidden'; }
 }
 
 function selectSubLeaveReason(event, key, text) {
@@ -1466,9 +1543,9 @@ function renderStaffCalendar(data, staffId) {
     const grid = document.createElement('div');
     grid.className = 'calendar-grid';
     
-    const dayNames = currentLang === 'ku' ? ["شەممە", "1شەم", "2شەم", "3شەم", "4شەم", "5شەم", "هەینی"] : ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
+    const dayNames = currentLang === 'ku' ? ["شەم", "1شەم", "2شەم", "3شەم", "4شەم", "5شەم", "هەینی"] : ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
     dayNames.forEach(d => {
-        grid.innerHTML += `<div class="calendar-day-name" style="font-size:0.65rem;">${d}</div>`;
+        grid.innerHTML += `<div class="calendar-day-name">${d}</div>`;
     });
 
     const firstDay = new Date(year, month, 1).getDay();
@@ -1502,7 +1579,6 @@ function renderStaffCalendar(data, staffId) {
         
         const dayEl = document.createElement('div');
         dayEl.className = className;
-        dayEl.style.fontSize = "0.75rem";
         dayEl.innerText = d;
         dayEl.onclick = () => showStaffDayDetails(record, dateStr, staffId); // بەکارهێنانی ئایدی ناوخۆیی
         grid.appendChild(dayEl);
@@ -1519,17 +1595,31 @@ async function viewSelectedStaffAttendance(clickedBtn) {
     if (!selectedStaffId) return;
     
     const wrapper = document.getElementById('staffCalendarWrapper');
+    const leaveWrapper = document.getElementById('staffLeaveWrapper');
+    const leaveBtn = document.getElementById('toggleStaffLeaveBtn');
+    const historyBtn = document.getElementById('toggleStaffHistoryBtn');
+    const btn = clickedBtn || historyBtn;
+
     // ئەگەر کالێندەرەکە کراوە بوو و هەمان فەرمانبەر هەڵبژێردرابوو، دایبخە (Toggle)
     const isVisible = wrapper.style.maxHeight !== '0px' && wrapper.style.maxHeight !== '';
     if (isVisible && lastViewedStaffId === selectedStaffId) {
         wrapper.style.maxHeight = '0';
         wrapper.style.opacity = '0';
         wrapper.style.visibility = 'hidden';
+        if (btn) btn.classList.remove('active');
         return;
     }
 
+    // داخستنی بەشی مۆڵەت پێش کردنەوەی مێژوو
+    if (leaveWrapper) {
+        leaveWrapper.style.maxHeight = '0';
+        leaveWrapper.style.opacity = '0';
+        leaveWrapper.style.visibility = 'hidden';
+    }
+    if (leaveBtn) leaveBtn.classList.remove('active');
+    if (btn) btn.classList.add('active');
+
     const staffId = selectedStaffId;
-    const btn = clickedBtn || document.querySelector('.sub-admin-panel .history-btn');
     const originalHTML = btn.innerHTML;
     btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${translations[currentLang].waitText}`;
     
