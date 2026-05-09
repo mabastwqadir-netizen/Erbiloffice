@@ -1388,7 +1388,7 @@ async function openMgmtModal() {
                                 </div>
                                 <div class="input-wrapper-labeled">
                                     <label style="font-size:0.6rem; color:var(--primary);">${t.to}</label>
-                                    <input type="time" id="subLeaveEndTime" class="glass-input" style="height:40px; border-radius:10px; font-size:0.75rem;" onchange="selectedLeaveEndDate=this.value">
+                                    <input type="time" id="subLeaveEndTime" class="glass-input" style="height:40px; border-radius:10px; font-size:0.75rem;" onchange="selectedLeaveEndTime=this.value">
                                 </div>
                             </div>
                             
@@ -1466,6 +1466,7 @@ function toggleStaffLeaveSection(btn) {
     leaveWrapper.style.maxHeight = isExpanding ? '600px' : '0';
     leaveWrapper.style.opacity = isExpanding ? '1' : '0';
     leaveWrapper.style.visibility = isExpanding ? 'visible' : 'hidden';
+    leaveWrapper.style.overflow = isExpanding ? 'visible' : 'hidden';
     btn.classList.toggle('active', isExpanding);
 }
 
@@ -1842,7 +1843,7 @@ async function saveStaffLeave() {
         return;
     }
 
-    const saveBtn = document.querySelector('.sub-admin-panel .login-btn');
+    const saveBtn = document.querySelector('.sub-admin-modal .save-leave-btn');
     const originalText = saveBtn.innerHTML;
     saveBtn.disabled = true;
     saveBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
