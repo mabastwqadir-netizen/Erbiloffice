@@ -561,10 +561,18 @@ function startTracking() {
     isJitteringDetected = null; // Reset to null, meaning "not yet determined"
     isLocationSuitable = false; // Reset suitability flag for the new attempt
 
+    // پشکنینی مۆڵەت پێش نیشاندانی تێکستی "Searching"
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Baghdad' }).format(new Date());
+    const hasFullLeave = userLeaves.some(l => 
+        todayStr >= l.start_date && todayStr <= l.end_date && l.reason !== 'hourlyLeave' && l.reason !== 'mobileTeam'
+    );
+
     locationAttempts++;
     userPos = null; // پاککردنەوەی داتای پێشوو بۆ دڵنیایی زیاتر
 
-    if (txt && btn.style.display !== 'none') txt.innerText = `${translations[currentLang].searching} (${locationAttempts}/3)`; // Update checkin button text
+    if (!hasFullLeave && txt && btn.style.display !== 'none') {
+        txt.innerText = `${translations[currentLang].searching} (${locationAttempts}/3)`;
+    }
     updateVerifyUI('location', null, 'loading', `${translations[currentLang].searching} (${locationAttempts}/3)`);
 
     const options = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
@@ -727,6 +735,18 @@ function updateLocationSuitabilityAndUI() {
 
     // Update checkin button text
     if (txt && btn.style.display !== 'none') {
+        // لۆجیکی ڕێگری لە فڵیکەر: ئەگەر مۆڵەت بوو، هیچ تێکستێکی تر دامەنێ
+        const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Baghdad' }).format(new Date());
+        const hasFullLeave = userLeaves.some(l => 
+            todayStr >= l.start_date && todayStr <= l.end_date && l.reason !== 'hourlyLeave' && l.reason !== 'mobileTeam'
+        );
+
+        if (hasFullLeave) {
+            txt.innerText = translations[currentLang].leaveStatuss;
+            refreshActionButtons();
+            return; // لێرە بوەستە و مەهێڵە لۆجیکەکانی خوارەوە تێکستەکە بگۆڕن
+        }
+
         if (!isDeviceVerified) {
             txt.innerText = translations[currentLang].invalidDevice;
         } else if (isJitteringDetected === false) {
