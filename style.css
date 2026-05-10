@@ -1822,9 +1822,8 @@ min-height: 80px; /* Ensure consistent height for both items */
     transition: transform 0.3s;
     box-shadow: 0 2px 8px rgba(0, 98, 255, 0.2);
 }
-#refreshLocBtn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 98, 255, 0.3);
+#refreshLocBtn:active {
+    transform: scale(0.96) translateY(2px) !important;
 }
 
 .btn-secondary {

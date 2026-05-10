@@ -137,9 +137,18 @@ function renderBranchDropdown() {
     const branchOptions = document.getElementById('branchOptions');
     if (branchOptions) {
         branchOptions.innerHTML = ''; 
+        
+        // زیادکردنی ئۆپشنی "هەموو بنکەکان" بۆ سەرەتای لیستەکە
+        const allOption = document.createElement('div');
+        allOption.className = 'option' + (currentFilters.branch === 'all' ? ' selected' : '');
+        allOption.setAttribute('data-i18n', 'allBranches');
+        allOption.innerText = translations[currentLang].allBranches;
+        allOption.onclick = () => selectOption('branchSelect', 'all', translations[currentLang].allBranches, true);
+        branchOptions.appendChild(allOption);
+
         branchesCache.forEach(b => {
             const div = document.createElement('div');
-            div.className = 'option';
+            div.className = 'option' + (currentFilters.branch === b.branch_id ? ' selected' : '');
             div.innerText = `${b.branch_id} | ${b.branch_name}`;
             div.onclick = () => selectOption('branchSelect', b.branch_id, div.innerText, true);
             branchOptions.appendChild(div);

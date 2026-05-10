@@ -1530,7 +1530,12 @@ function renderStaffCalendar(data, staffId) {
     
     const year = staffViewDate.getFullYear();
     const month = staffViewDate.getMonth();
-    const monthName = new Intl.DateTimeFormat(currentLang === 'ku' ? 'ku-IQ' : 'ar-IQ', { month: 'long', year: 'numeric' }).format(staffViewDate);
+    let monthName;
+    if (currentLang === 'ku') {
+        monthName = translations[currentLang].months[month] + "ی " + year;
+    } else {
+        monthName = new Intl.DateTimeFormat('ar-IQ', { month: 'long', year: 'numeric' }).format(staffViewDate);
+    }
     
     const header = document.createElement('div');
     header.className = 'calendar-header';
@@ -1744,11 +1749,11 @@ async function showStaffDayDetails(record, dateStr, staffId) {
         detailsHtml += `
             <div class="detail-text" style="border-right: 4px solid #22c55e; background: rgba(34, 197, 94, 0.05);">
                 <i class="fas fa-sign-in-alt" style="color: #22c55e;"></i> 
-                <div>${translations[currentLang].arrival}: <b>${formatTime12(record.check_in_time)}</b></div>
+                <div>${translations[currentLang].yourCheckIn}: <b>${formatTime12(record.check_in_time)}</b></div>
             </div>
             <div class="detail-text" style="border-right: 4px solid #ef4444; background: rgba(239, 68, 68, 0.05);">
                 <i class="fas fa-sign-out-alt" style="color: #ef4444;"></i> 
-                <div>${translations[currentLang].checkout}: <b>${record.check_out_time ? formatTime12(record.check_out_time) : translations[currentLang].notRecorded}</b></div>
+                <div>${translations[currentLang].yourCheckOut}: <b>${record.check_out_time ? formatTime12(record.check_out_time) : translations[currentLang].notRecorded}</b></div>
             </div>
             <div class="modal-compliance-box">
                 <div class="m-comp-header">
@@ -1820,7 +1825,7 @@ async function showStaffDayDetails(record, dateStr, staffId) {
                     <label style="font-size:0.8rem; font-weight:700; color:var(--text-sub); margin-bottom:8px; display:block;">
                         <i class="fas fa-file-signature"></i> ${translations[currentLang].justification}
                     </label>
-                    <div class="justification-view-box" style="min-height: 60px; font-size:0.85rem;">
+                    <div class="justification-input" style="min-height: 60px; font-size:0.8rem;">
                         ${justificationContent}
                     </div>
                 </div>
@@ -1987,7 +1992,11 @@ function renderCalendar() {
     const year = currentViewDate.getFullYear();
     const month = currentViewDate.getMonth();
 
-    monthLabel.innerText = new Intl.DateTimeFormat(currentLang === 'ku' ? 'ku-IQ' : 'ar-IQ', { month: 'long', year: 'numeric' }).format(currentViewDate);
+    if (currentLang === 'ku') {
+        monthLabel.innerText = translations[currentLang].months[month] + "ی " + year;
+    } else {
+        monthLabel.innerText = new Intl.DateTimeFormat('ar-IQ', { month: 'long', year: 'numeric' }).format(currentViewDate);
+    }
 
     // ناوی ڕۆژەکان
     const days = currentLang === 'ku' ? ["شەممە", "1شەم", "2شەم", "3شەم", "4شەم", "5شەم", "هەینی"] : ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
