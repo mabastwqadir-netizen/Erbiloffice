@@ -475,6 +475,27 @@ function refreshActionButtons() {
     const inBtn = document.getElementById('checkinBtn');
     const outBtn = document.getElementById('checkoutBtn');
     const inInfo = document.getElementById('checkInInfo');
+    const txt = document.getElementById('checkinText');
+
+    // پشکنینی ئەوەی ئایا فەرمانبەر لە مۆڵەتی گشتیدایە (جگە لە مۆڵەتی کاتی)
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Baghdad' }).format(new Date());
+    const activeFullLeave = userLeaves.find(l => 
+        todayStr >= l.start_date && 
+        todayStr <= l.end_date && 
+        l.reason !== 'hourlyLeave' && 
+        l.reason !== 'mobileTeam'
+    );
+
+    if (activeFullLeave) {
+        if (inBtn && inBtn.style.display !== 'none') {
+            inBtn.disabled = true;
+            if (txt) txt.innerText = translations[currentLang].leaveStatuss;
+        }
+        if (outBtn && outBtn.style.display !== 'none') {
+            outBtn.disabled = true;
+        }
+        return; // ئەگەر لە مۆڵەتدا بوو، پشکنینەکانی تر ئەنجام مەدە
+    }
     
     const canProceed = isDeviceVerified && isLocationSuitable;
 
@@ -873,6 +894,16 @@ async function processCheckIn() {
     const btn = document.getElementById('checkinBtn');
     const txt = document.getElementById('checkinText');
 
+    // پشکنینی سکیوریتی بۆ مۆڵەت پێش ئەنجامدانی چێک-ئین
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Baghdad' }).format(new Date());
+    const hasFullLeave = userLeaves.some(l => 
+        todayStr >= l.start_date && todayStr <= l.end_date && l.reason !== 'hourlyLeave' && l.reason !== 'mobileTeam'
+    );
+    if (hasFullLeave) {
+        updateStatus(translations[currentLang].leaveStatus, "error");
+        return;
+    }
+
     // پشکنینی VPN پێش دەستپێکردن
     if (await isVPNActive()) {
         updateStatus(translations[currentLang].vpnError, "error");
@@ -990,6 +1021,16 @@ async function processCheckIn() {
 async function processCheckOut() {
     const btn = document.getElementById('checkoutBtn');
     if (!currentUser) return;
+
+    // پشکنینی سکیوریتی بۆ مۆڵەت پێش ئەنجامدانی چێک-ئاوت
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Baghdad' }).format(new Date());
+    const hasFullLeave = userLeaves.some(l => 
+        todayStr >= l.start_date && todayStr <= l.end_date && l.reason !== 'hourlyLeave' && l.reason !== 'mobileTeam'
+    );
+    if (hasFullLeave) {
+        updateStatus(translations[currentLang].leaveStatus, "error");
+        return;
+    }
 
     // پشکنینی VPN پێش دەرچوون
     if (await isVPNActive()) {
