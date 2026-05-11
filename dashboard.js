@@ -128,6 +128,54 @@ async function getAudioFingerprint() {
         } catch (e) { clearTimeout(timeout); resolve('audio-err'); }
     });
 }
+
+// --- Probabilistic Similarity Logic (زیرەککردنی ناسینەوە) ---
+function calculateSimilarity(current, stored) {
+    if (!stored) return 0;
+    let score = 0;
+    const weights = {
+        seed: 50,    // ئەگەر کۆدی ناو کاش مابوو
+        canvas: 15,  // شێوازی ڕێندەرکردنی وێنە
+        audio: 10,   // شێوازی ڕێندەرکردنی دەنگ
+        hardware: 15, // سیفاتەکانی مۆبایل (CPU, GPU, Screen)
+        meta: 10     // زمان و ناوچەی کاتی
+    };
+
+    // پشکنینی Seed (کۆدی شاراوە لە کاش)
+    if (current.seed === stored.seed) score += weights.seed;
+
+    // پشکنینی Hardware (ئەگەر مۆبایلەکە هەمان مۆدێل بێت)
+    if (current.hardware === stored.hardware) score += weights.hardware;
+
+    // پشکنینی Audio & Canvas
+    if (current.canvas === stored.canvas) score += weights.canvas;
+    if (current.audio === stored.audio) score += weights.audio;
+    
+    // پشکنینی زمان و مێتا داتا
+    if (current.meta === stored.meta) score += weights.meta;
+
+    return score;
+}
+
+async function captureDeviceProfile() {
+    const hardwareFP = await getHardwareFingerprint();
+    const audioFP = await getAudioFingerprint();
+    const seed = localStorage.getItem('ihec_unique_seed') || "";
+    
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.font = "14px Arial";
+    const canvasHash = canvas.toDataURL().substring(0, 50); // کورتە وێنەیەک
+
+    return {
+        seed: seed,
+        hardware: hardwareFP,
+        audio: audioFP,
+        canvas: canvasHash,
+        meta: `${navigator.language}-${Intl.DateTimeFormat().resolvedOptions().timeZone}`
+    };
+}
+
 // --- دروستکردنی پەنجەمۆری ڕەقەکاڵا (Hardware Fingerprint) ---
 async function getHardwareFingerprint() {
     let audioHash = 'no-audio';
@@ -218,33 +266,63 @@ async function getHardwareFingerprint() {
 // --- بەڕێوەبردنی ئایدی ئامێر (Smart Device Manager) ---
 async function getDeviceID() {
     try {
-        // ١. هەوڵدان بۆ گەڕاندنەوەی Seed لە LocalStorage یان Cookie
+        const currentProfile = await captureDeviceProfile();
+        const hardwareFP = currentProfile.hardware;
         let persistentSeed = localStorage.getItem('ihec_unique_seed');
-        
-        // ئەگەر لە LocalStorage نەبوو، لە Cookie بگەڕێ (بۆ کاتی Clear Cache)
+
         if (!persistentSeed) {
             const cookieMatch = document.cookie.match(/ihec_seed=([^;]+)/);
             persistentSeed = cookieMatch ? cookieMatch[1] : null;
         }
 
-        if (!persistentSeed) {
-            // دروستکردنی کۆدێکی هەرەمەکی زۆر درێژ و تاقانە (Cryptographically Strong)
-            const array = new Uint32Array(8);
-            (window.crypto || window.msCrypto).getRandomValues(array);
-            const randomPart = Array.from(array, dec => dec.toString(36)).join('-');
-            persistentSeed = `seed-${randomPart}-${Date.now().toString(36)}`;
+        if (userProfile && userProfile.device_id) {
+            const storedId = userProfile.device_id;
+
+            // حاڵەتی یەکەم: ئەگەر ئایدییەکە شێوازە کۆنە تێکەڵەکە بوو (وەک IHEC-DEVICE-HW-SEED)
+            if (storedId.startsWith('IHEC-DEVICE-')) {
+                const parts = storedId.split('-');
+                const storedHW = parts[2]?.toLowerCase(); // بەشی ڕەقەکاڵا
+                const storedSeed = parts[3]?.toLowerCase(); // بەشی Seed
+
+                // ئەگەر ڕەقەکاڵاکە هەمان شت بوو، واتا مۆبایلەکە گۆڕانکاری بەسەر نەهاتووە
+                if (hardwareFP.toLowerCase() === storedHW) {
+                    currentProfile.seed = persistentSeed || storedSeed || currentProfile.seed;
+                    const migratedProfile = JSON.stringify(currentProfile);
+                    localStorage.setItem('ihec_unique_seed', currentProfile.seed);
+                    localStorage.setItem('device_id', migratedProfile);
+                    return migratedProfile;
+                }
+            }
+
+            // حاڵەتی دووەم: ئەگەر ئایدییەکە پێشتر بووە بە JSON (شێوازە نوێیەکە)
+            try {
+                const storedData = JSON.parse(storedId);
+                const similarity = calculateSimilarity(currentProfile, storedData);
+
+                if (similarity >= 40) {
+                    if (!persistentSeed) {
+                        persistentSeed = storedData.seed;
+                        localStorage.setItem('ihec_unique_seed', persistentSeed);
+                        document.cookie = `ihec_seed=${persistentSeed}; Max-Age=${60*60*24*365*10}; Path=/; SameSite=Lax`;
+                    }
+                    currentProfile.seed = persistentSeed;
+                    return JSON.stringify(currentProfile);
+                }
+            } catch (e) { /* ئەگەر JSON نەبوو، بە شێوازی کۆن مامەڵە بکە */ }
         }
 
-        // پاشەکەوتکردنەوە لە هەردوو شوێنەکە بۆ دڵنیایی زیاتر
-        localStorage.setItem('ihec_unique_seed', persistentSeed);
-        document.cookie = `ihec_seed=${persistentSeed}; Max-Age=${60*60*24*365*10}; Path=/; SameSite=Lax`;
+        // دروستکردنی ئایدی نوێ ئەگەر هیچ لێکچوونێک نەبوو
+        if (!persistentSeed) {
+            const array = new Uint32Array(4);
+            window.crypto.getRandomValues(array);
+            persistentSeed = `seed-${Array.from(array, d => d.toString(36)).join('')}`;
+            localStorage.setItem('ihec_unique_seed', persistentSeed);
+        }
 
-        const hardwareFP = await getHardwareFingerprint();
-        
-        // ٢. دروستکردنی کۆدی کۆتایی (Hardware Hash + Unique Seed)
-        const finalID = `IHEC-DEVICE-${hardwareFP.toUpperCase()}-${persistentSeed.toUpperCase()}`;
-        localStorage.setItem('device_id', finalID);
-        return finalID;
+        currentProfile.seed = persistentSeed;
+        const finalProfileStr = JSON.stringify(currentProfile);
+        localStorage.setItem('device_id', finalProfileStr);
+        return finalProfileStr;
     } catch (e) {
         console.error("Storage error:", e);
         return await getHardwareFingerprint(); 
@@ -1240,51 +1318,62 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.addEventListener('languageChanged', renderProfileDisplay);
 
         let currentDev = await getDeviceID();
+        const currentProfile = JSON.parse(currentDev);
 
-       // ١. پشکنین بکە ئایا ئەم ئایدییە تاقانەیە (Hardware + Seed) پێشتر لای کەسێکی تر تۆمار کراوە؟
-        const { data: deviceOwner, error: deviceError } = await client
+        // ١. هێنانی هەموو ئایدییەکانی تری ناو سیستمەکە بۆ پشکنینی Collision
+        const { data: allDevices, error: deviceError } = await client
             .from('profiles')
             .select('id, full_name, device_id')
-            .not('device_id', 'is', null)
-            .eq('device_id', currentDev) // پشکنینی ئایدییە تەواوەکە
-            .maybeSingle(); // یەکەم کەس دەهێنێت کە ئەم ئامێرەی تۆمار کردبێت
+            .not('device_id', 'is', null);
 
         if (deviceError) {
             console.error("Device verification error:", deviceError);
-            isDeviceVerified = false;
-            updateVerifyUI('device', isDeviceVerified, null, translations[currentLang].errorFetch);
-            return;
         }
+
+        // پشکنین بۆ ئەوەی بزانین ئایا ئەم ئامێرە (بە ئەگەری ٨٥٪) هی کەسێکی ترە؟
+        const deviceOwner = allDevices?.find(d => {
+            if (d.id === user.id) return false; // هی خۆیەتی، لێرەدا مەپشکنە
+            try {
+                const stored = JSON.parse(d.device_id);
+                // مەرجی توند بۆ ڕێگری لە تێکەڵبوون لەگەڵ فەرمانبەرانی تر
+                return calculateSimilarity(currentProfile, stored) >= 85; 
+            } catch(e) { 
+                 // ئەگەر ئایدی ئەوانی تریش هێشتا کۆن بوو، پشکنینی ڕەقەکاڵا بکە
+                if (d.device_id.startsWith('IHEC-DEVICE-')) {
+                    const storedHW = d.device_id.split('-')[2]?.toLowerCase();
+                    return storedHW === currentProfile.hardware.toLowerCase();
+                }
+                return d.device_id === currentDev; 
+
+            }
+        });
 
         let deviceMsgShort = translations[currentLang].verified;
         let deviceMsgLong = "";
 
         if (deviceOwner) {
-           // ئەگەر ئامێرەکە پێشتر لای ئەم کەسە تۆمارکراوە
-            if (deviceOwner.id === user.id) {
-                isDeviceVerified = true;
-            } else {
-                // حاڵەتی یەکەم: ئامێرەکە پێشتر لای کەسێکی تر تۆمار کراوە
-                isDeviceVerified = false;
-                deviceMsgShort = translations[currentLang].deviceTakenShort;
-                deviceMsgLong = translations[currentLang].deviceTaken;
-            }
+            // ئامێرەکە لای کەسێکی تر تۆمارکراوە (Collision Prevention)
+            isDeviceVerified = false;
+            deviceMsgShort = translations[currentLang].deviceTakenShort;
+            deviceMsgLong = translations[currentLang].deviceTaken;
         } else {
-             // ئەگەر فەرمانبەرەکە ئایدی تۆمارکراوی نییە، یان ئایدییەکەی شێوازە کۆنەکەیە
-            if (!profile.device_id || !profile.device_id.startsWith('IHEC-DEVICE-')) {
-                // ئەپدەیتکردن یان تۆمارکردنی ئامێر بۆ وەشانی نوێی جێگیر
+              // پشکنینی ئایدی خۆی و نوێکردنەوەی خۆکار (Auto-Update to JSON)
+            if (!profile.device_id || profile.device_id.startsWith('IHEC-DEVICE-')) {
+                // کۆچکردن لە ئایدی کۆن بۆ نوێ یان تۆمارکردنی نوێ
                 const { error: regError } = await client.from('profiles').update({ device_id: currentDev }).eq('id', user.id);
-                if (regError) {
-                    console.error("Failed to register device:", regError);
-                } else {
-                    isDeviceVerified = true;
-                }
+               isDeviceVerified = !regError;
             } else {
-                // پشکنینی ئامێری تۆمارکراو لەگەڵ ئامێری ئێستا
-                if (profile.device_id === currentDev) {
-                    isDeviceVerified = true;
-                } else {
-                    isDeviceVerified = false;
+                // پشکنینی ئایدی نوێ (JSON) بە لۆجیکی ٤٠٪
+                const myStoredProfile = JSON.parse(profile.device_id);
+                const similarity = calculateSimilarity(currentProfile, myStoredProfile);
+                
+                isDeviceVerified = similarity >= 40;
+                // ئەگەر لێکچوون هەبوو بەڵام ١٠٠٪ نەبوو، پڕۆفایلەکە لە سێرڤەر نوێ بکەرەوە (Self-Heal)
+                if (isDeviceVerified && similarity < 100) {
+                    await client.from('profiles').update({ device_id: currentDev }).eq('id', user.id);
+                }
+
+                if (!isDeviceVerified) {
                     deviceMsgShort = translations[currentLang].notPreviousDevice;
                     deviceMsgLong = translations[currentLang].notPreviousDevicelong;
                 }
